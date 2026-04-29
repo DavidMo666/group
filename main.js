@@ -46,6 +46,30 @@ const dom = {
   skeleton: document.getElementById("skeleton"),
 };
 
+const escapeHTML = (str) => {
+  const div = document.createElement("div");
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+};
+
+const isCSVFormulaRisk = (value) => {
+  return /^[\t\r\n]|^\s*[=+\-@]/.test(value);
+};
+
+const toCSVTextFormula = (value) => {
+  return `="${value.replaceAll('"', '""')}"`;
+};
+
+const escapeCSVCell = (cell, shouldPreventFormula = true) => {
+  const value = String(cell ?? "");
+  const safeValue =
+    shouldPreventFormula && isCSVFormulaRisk(value)
+      ? toCSVTextFormula(value)
+      : value;
+
+  return `"${safeValue.replaceAll('"', '""')}"`;
+};
+
 const generateID = () => {
   return `tx_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 };
@@ -254,7 +278,7 @@ const renderTransactions = () => {
     .map(
       (group) => `
         <div class="month-group">
-          <p class="month-title">${group.label}</p>
+          <p class="month-title">${escapeHTML(group.label)}</p>
           ${group.items.map(renderTransactionItem).join("")}
         </div>
       `,
@@ -270,16 +294,16 @@ const renderTransactionItem = (tx) => {
   return `
     <div class="transaction">
       <div>
-        <p class="transaction__title">${tx.title}</p>
+        <p class="transaction__title">${escapeHTML(tx.title)}</p>
         <div class="transaction__meta">
-          <span class="badge">${tx.category}</span>
-          <span>${formattedDate}</span>
+          <span class="badge">${escapeHTML(tx.category)}</span>
+          <span>${escapeHTML(formattedDate)}</span>
         </div>
       </div>
       <div>
-        <p class="amount ${typeClass}">${formattedAmount}</p>
-        <button class="edit-btn" data-id="${tx.id}">Edit</button>
-        <button class="delete-btn" data-id="${tx.id}">Delete</button>
+        <p class="amount ${typeClass}">${escapeHTML(formattedAmount)}</p>
+        <button class="edit-btn" data-id="${escapeHTML(tx.id)}">Edit</button>
+        <button class="delete-btn" data-id="${escapeHTML(tx.id)}">Delete</button>
       </div>
     </div>
   `;
@@ -428,7 +452,7 @@ const exportToCSV = () => {
 
   const csv = [headers, ...rows]
     .map((row) =>
-      row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","),
+      row.map((cell) => escapeCSVCell(cell, typeof cell !== "number")).join(","),
     )
     .join("\n");
 
