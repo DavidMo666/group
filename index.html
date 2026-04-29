@@ -192,12 +192,16 @@
       <div class="modal__backdrop" data-close="true"></div>
       <div
         class="modal__content"
+        tabindex="-1"
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirmTitle"
+        aria-describedby="confirmDescription"
       >
         <h3 class="section-title" id="confirmTitle">Delete transaction?</h3>
-        <p class="modal__text">This action cannot be undone.</p>
+        <p class="modal__text" id="confirmDescription">
+          This action cannot be undone.
+        </p>
         <div class="modal__actions">
           <button class="btn btn--ghost" id="cancelDeleteBtn" type="button">
             Cancel

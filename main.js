@@ -2,6 +2,16 @@
 
 const STORAGE_KEY = "financeTrackerData";
 const THEME_KEY = "financeTrackerTheme";
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "textarea:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
+
+let modalTriggerElement = null;
 
 const state = {
   transactions: [],
@@ -40,6 +50,7 @@ const dom = {
   totalExpenses: document.getElementById("totalExpenses"),
   financeChart: document.getElementById("financeChart"),
   confirmModal: document.getElementById("confirmModal"),
+  confirmModalContent: document.querySelector("#confirmModal .modal__content"),
   confirmDeleteBtn: document.getElementById("confirmDeleteBtn"),
   cancelDeleteBtn: document.getElementById("cancelDeleteBtn"),
   toastContainer: document.getElementById("toastContainer"),
@@ -202,16 +213,90 @@ const deleteTransaction = (id) => {
   showToast("Transaction deleted.");
 };
 
+const getConfirmModalFocusableElements = () => {
+  return Array.from(dom.confirmModal.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
+    (element) =>
+      !element.hasAttribute("hidden") &&
+      element.getAttribute("aria-hidden") !== "true" &&
+      element.offsetParent !== null,
+  );
+};
+
+const focusConfirmModal = () => {
+  const [firstFocusableElement] = getConfirmModalFocusableElements();
+  const focusTarget = firstFocusableElement || dom.confirmModalContent;
+  focusTarget?.focus();
+};
+
+const restoreFocusAfterModal = () => {
+  const fallbackFocusTarget =
+    dom.transactionsList.querySelector(".delete-btn, .empty-add-btn") ||
+    dom.titleInput;
+
+  const focusTarget = modalTriggerElement?.isConnected
+    ? modalTriggerElement
+    : fallbackFocusTarget;
+
+  focusTarget?.focus();
+  modalTriggerElement = null;
+};
+
+const handleConfirmModalKeydown = (event) => {
+  if (!dom.confirmModal.classList.contains("is-open")) return;
+
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeConfirmModal();
+    return;
+  }
+
+  if (event.key !== "Tab") return;
+
+  const focusableElements = getConfirmModalFocusableElements();
+
+  if (focusableElements.length === 0) {
+    event.preventDefault();
+    dom.confirmModalContent.focus();
+    return;
+  }
+
+  const firstFocusableElement = focusableElements[0];
+  const lastFocusableElement = focusableElements[focusableElements.length - 1];
+
+  if (!dom.confirmModal.contains(document.activeElement)) {
+    event.preventDefault();
+    firstFocusableElement.focus();
+    return;
+  }
+
+  if (event.shiftKey && document.activeElement === firstFocusableElement) {
+    event.preventDefault();
+    lastFocusableElement.focus();
+  }
+
+  if (!event.shiftKey && document.activeElement === lastFocusableElement) {
+    event.preventDefault();
+    firstFocusableElement.focus();
+  }
+};
+
 const openConfirmModal = (id) => {
+  modalTriggerElement = document.activeElement;
   state.pendingDeleteId = id;
   dom.confirmModal.classList.add("is-open");
   dom.confirmModal.setAttribute("aria-hidden", "false");
+  focusConfirmModal();
 };
 
 const closeConfirmModal = () => {
+  const wasOpen = dom.confirmModal.classList.contains("is-open");
   state.pendingDeleteId = null;
   dom.confirmModal.classList.remove("is-open");
   dom.confirmModal.setAttribute("aria-hidden", "true");
+
+  if (wasOpen) {
+    restoreFocusAfterModal();
+  }
 };
 
 const renderSummary = () => {
@@ -528,6 +613,8 @@ const initializeApp = () => {
       closeConfirmModal();
     }
   });
+
+  document.addEventListener("keydown", handleConfirmModalKeydown);
 };
 
 initializeApp();
