@@ -1,0 +1,11 @@
+.DS_Store
+
+# Local reproduction screenshots are kept here while working.
+# Commit the curated copies under evidence/assets/ instead.
+复现问题截屏/
+
+# Course handouts and local submission templates should not be part of PRs.
+CPT304 Coursework 1.pdf
+CPT304 Coursework 1 Guidelines.docx
+CPT304 - Individual Contribution Form.docx
+CPT304_GitHub_Baseline_DLI.pdf
