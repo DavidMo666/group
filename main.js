@@ -42,6 +42,7 @@ const dom = {
   confirmModal: document.getElementById("confirmModal"),
   confirmDeleteBtn: document.getElementById("confirmDeleteBtn"),
   cancelDeleteBtn: document.getElementById("cancelDeleteBtn"),
+  modalEditingWarning: document.getElementById("modalEditingWarning"),
   toastContainer: document.getElementById("toastContainer"),
   skeleton: document.getElementById("skeleton"),
 };
@@ -234,6 +235,15 @@ const addTransaction = () => {
   const date = dom.dateInput.value;
 
   if (state.editingId) {
+    // Defensive guard: if the transaction no longer exists
+    const stillExists = state.transactions.some(
+      (tx) => tx.id === state.editingId,
+    );
+    if (!stillExists) {
+      showToast("Transaction no longer exists.", "error");
+      resetFormState();
+      return;
+    }
     state.transactions = state.transactions.map((tx) =>
       tx.id === state.editingId ? { ...tx, title, amount, category, date } : tx,
     );
@@ -260,6 +270,9 @@ const startEditing = (id) => {
   const transaction = state.transactions.find((tx) => tx.id === id);
   if (!transaction) return;
 
+  // If another row is being edited, remember state before switching 
+  const isSwitching = state.editingId !== null && state.editingId !== id;
+
   dom.titleInput.value = transaction.title;
   dom.amountInput.value = transaction.amount;
   dom.categoryInput.value = transaction.category;
@@ -269,10 +282,24 @@ const startEditing = (id) => {
   dom.submitBtn.textContent = "Save Changes";
   dom.cancelEditBtn.hidden = false;
   dom.titleInput.focus();
-  showToast("Editing mode enabled.");
+
+  // When switching edit target, tell user unsaved changes on the previous row were discarded
+  showToast(
+    isSwitching
+      ? "Switched to a different transaction. Unsaved changes discarded."
+      : "Editing mode enabled.",
+    isSwitching ? "error" : "success",
+  );
+
+  
+  renderTransactions();
 };
 
 const deleteTransaction = (id) => {
+  
+  if (state.editingId === id) {
+    resetFormState();
+  }
   state.transactions = state.transactions.filter((tx) => tx.id !== id);
   saveToLocalStorage();
   renderApp();
@@ -281,12 +308,15 @@ const deleteTransaction = (id) => {
 
 const openConfirmModal = (id) => {
   state.pendingDeleteId = id;
+  // If delete target is the row currently being edited, show an extra warning
+  dom.modalEditingWarning.hidden = state.editingId !== id;
   dom.confirmModal.classList.add("is-open");
   dom.confirmModal.setAttribute("aria-hidden", "false");
 };
 
 const closeConfirmModal = () => {
   state.pendingDeleteId = null;
+  dom.modalEditingWarning.hidden = true;
   dom.confirmModal.classList.remove("is-open");
   dom.confirmModal.setAttribute("aria-hidden", "true");
 };
@@ -343,9 +373,11 @@ const renderTransactionItem = (tx) => {
   const typeClass = tx.amount >= 0 ? "amount--income" : "amount--expense";
   const formattedAmount = formatCurrency(tx.amount);
   const formattedDate = formatDate(tx.date);
+  // Highlight the row being edited 
+  const editingClass = state.editingId === tx.id ? " transaction--editing" : "";
 
   return `
-    <div class="transaction">
+    <div class="transaction${editingClass}">
       <div>
         <p class="transaction__title">${escapeHTML(tx.title)}</p>
         <div class="transaction__meta">
@@ -539,6 +571,8 @@ const initializeApp = () => {
 
   dom.cancelEditBtn.addEventListener("click", () => {
     resetFormState();
+    // Clear list highlight when leaving edit mode
+    renderTransactions();
   });
 
   dom.transactionsList.addEventListener("click", (e) => {
