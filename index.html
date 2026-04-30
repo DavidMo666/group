@@ -198,6 +198,10 @@
       >
         <h3 class="section-title" id="confirmTitle">Delete transaction?</h3>
         <p class="modal__text">This action cannot be undone.</p>
+        <!-- Shown only when deleting the transaction currently being edited -->
+        <p class="modal__warning" id="modalEditingWarning" hidden>
+          You are currently editing this transaction. Deleting it will discard your unsaved changes.
+        </p>
         <div class="modal__actions">
           <button class="btn btn--ghost" id="cancelDeleteBtn" type="button">
             Cancel
