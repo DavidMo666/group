@@ -53,8 +53,33 @@ const dom = {
   confirmModalContent: document.querySelector("#confirmModal .modal__content"),
   confirmDeleteBtn: document.getElementById("confirmDeleteBtn"),
   cancelDeleteBtn: document.getElementById("cancelDeleteBtn"),
+  modalEditingWarning: document.getElementById("modalEditingWarning"),
   toastContainer: document.getElementById("toastContainer"),
   skeleton: document.getElementById("skeleton"),
+};
+
+const escapeHTML = (str) => {
+  const div = document.createElement("div");
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+};
+
+const isCSVFormulaRisk = (value) => {
+  return /^[\t\r\n]|^\s*[=+\-@]/.test(value);
+};
+
+const toCSVTextFormula = (value) => {
+  return `="${value.replaceAll('"', '""')}"`;
+};
+
+const escapeCSVCell = (cell, shouldPreventFormula = true) => {
+  const value = String(cell ?? "");
+  const safeValue =
+    shouldPreventFormula && isCSVFormulaRisk(value)
+      ? toCSVTextFormula(value)
+      : value;
+
+  return `"${safeValue.replaceAll('"', '""')}"`;
 };
 
 const generateID = () => {
@@ -65,9 +90,62 @@ const saveToLocalStorage = () => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.transactions));
 };
 
+const isPlainObject = (value) => {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+};
+
+const isValidTransaction = (transaction) => {
+  if (!isPlainObject(transaction)) return false;
+
+  const { id, title, amount, category, date } = transaction;
+
+  return (
+    typeof id === "string" &&
+    id.trim().length > 0 &&
+    typeof title === "string" &&
+    title.trim().length > 0 &&
+    typeof amount === "number" &&
+    Number.isFinite(amount) &&
+    typeof category === "string" &&
+    category.trim().length > 0 &&
+    typeof date === "string" &&
+    date.trim().length > 0 &&
+    !Number.isNaN(new Date(date).getTime())
+  );
+};
+
+const resetStoredTransactions = () => {
+  state.transactions = [];
+  saveToLocalStorage();
+};
+
 const loadFromLocalStorage = () => {
   const stored = localStorage.getItem(STORAGE_KEY);
-  state.transactions = stored ? JSON.parse(stored) : [];
+
+  if (!stored) {
+    state.transactions = [];
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+
+    if (!Array.isArray(parsed)) {
+      throw new TypeError("Stored transactions must be an array.");
+    }
+
+    const validTransactions = parsed.filter(isValidTransaction);
+    state.transactions = validTransactions;
+
+    if (validTransactions.length !== parsed.length) {
+      saveToLocalStorage();
+      showToast("Some saved transactions were invalid and were removed.", "error");
+    }
+  } catch (error) {
+    console.warn("Recovered from invalid financeTrackerData.", error);
+    resetStoredTransactions();
+    showToast("Saved data was corrupted and has been reset.", "error");
+  }
 };
 
 const saveTheme = () => {
@@ -168,6 +246,15 @@ const addTransaction = () => {
   const date = dom.dateInput.value;
 
   if (state.editingId) {
+    // Defensive guard: if the transaction no longer exists
+    const stillExists = state.transactions.some(
+      (tx) => tx.id === state.editingId,
+    );
+    if (!stillExists) {
+      showToast("Transaction no longer exists.", "error");
+      resetFormState();
+      return;
+    }
     state.transactions = state.transactions.map((tx) =>
       tx.id === state.editingId ? { ...tx, title, amount, category, date } : tx,
     );
@@ -194,6 +281,9 @@ const startEditing = (id) => {
   const transaction = state.transactions.find((tx) => tx.id === id);
   if (!transaction) return;
 
+  // If another row is being edited, remember state before switching 
+  const isSwitching = state.editingId !== null && state.editingId !== id;
+
   dom.titleInput.value = transaction.title;
   dom.amountInput.value = transaction.amount;
   dom.categoryInput.value = transaction.category;
@@ -203,10 +293,24 @@ const startEditing = (id) => {
   dom.submitBtn.textContent = "Save Changes";
   dom.cancelEditBtn.hidden = false;
   dom.titleInput.focus();
-  showToast("Editing mode enabled.");
+
+  // When switching edit target, tell user unsaved changes on the previous row were discarded
+  showToast(
+    isSwitching
+      ? "Switched to a different transaction. Unsaved changes discarded."
+      : "Editing mode enabled.",
+    isSwitching ? "error" : "success",
+  );
+
+  
+  renderTransactions();
 };
 
 const deleteTransaction = (id) => {
+  
+  if (state.editingId === id) {
+    resetFormState();
+  }
   state.transactions = state.transactions.filter((tx) => tx.id !== id);
   saveToLocalStorage();
   renderApp();
@@ -283,6 +387,8 @@ const handleConfirmModalKeydown = (event) => {
 const openConfirmModal = (id) => {
   modalTriggerElement = document.activeElement;
   state.pendingDeleteId = id;
+  // If delete target is the row currently being edited, show an extra warning
+  dom.modalEditingWarning.hidden = state.editingId !== id;
   dom.confirmModal.classList.add("is-open");
   dom.confirmModal.setAttribute("aria-hidden", "false");
   focusConfirmModal();
@@ -291,6 +397,7 @@ const openConfirmModal = (id) => {
 const closeConfirmModal = () => {
   const wasOpen = dom.confirmModal.classList.contains("is-open");
   state.pendingDeleteId = null;
+  dom.modalEditingWarning.hidden = true;
   dom.confirmModal.classList.remove("is-open");
   dom.confirmModal.setAttribute("aria-hidden", "true");
 
@@ -339,7 +446,7 @@ const renderTransactions = () => {
     .map(
       (group) => `
         <div class="month-group">
-          <p class="month-title">${group.label}</p>
+          <p class="month-title">${escapeHTML(group.label)}</p>
           ${group.items.map(renderTransactionItem).join("")}
         </div>
       `,
@@ -351,20 +458,22 @@ const renderTransactionItem = (tx) => {
   const typeClass = tx.amount >= 0 ? "amount--income" : "amount--expense";
   const formattedAmount = formatCurrency(tx.amount);
   const formattedDate = formatDate(tx.date);
+  // Highlight the row being edited 
+  const editingClass = state.editingId === tx.id ? " transaction--editing" : "";
 
   return `
-    <div class="transaction">
+    <div class="transaction${editingClass}">
       <div>
-        <p class="transaction__title">${tx.title}</p>
+        <p class="transaction__title">${escapeHTML(tx.title)}</p>
         <div class="transaction__meta">
-          <span class="badge">${tx.category}</span>
-          <span>${formattedDate}</span>
+          <span class="badge">${escapeHTML(tx.category)}</span>
+          <span>${escapeHTML(formattedDate)}</span>
         </div>
       </div>
       <div>
-        <p class="amount ${typeClass}">${formattedAmount}</p>
-        <button class="edit-btn" data-id="${tx.id}">Edit</button>
-        <button class="delete-btn" data-id="${tx.id}">Delete</button>
+        <p class="amount ${typeClass}">${escapeHTML(formattedAmount)}</p>
+        <button class="edit-btn" data-id="${escapeHTML(tx.id)}">Edit</button>
+        <button class="delete-btn" data-id="${escapeHTML(tx.id)}">Delete</button>
       </div>
     </div>
   `;
@@ -513,7 +622,7 @@ const exportToCSV = () => {
 
   const csv = [headers, ...rows]
     .map((row) =>
-      row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","),
+      row.map((cell) => escapeCSVCell(cell, typeof cell !== "number")).join(","),
     )
     .join("\n");
 
@@ -547,6 +656,8 @@ const initializeApp = () => {
 
   dom.cancelEditBtn.addEventListener("click", () => {
     resetFormState();
+    // Clear list highlight when leaving edit mode
+    renderTransactions();
   });
 
   dom.transactionsList.addEventListener("click", (e) => {

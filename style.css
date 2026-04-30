@@ -260,6 +260,14 @@ body {
   background: rgba(15, 23, 42, 0.55);
 }
 
+.transaction--editing {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.16);
+  box-shadow:
+    0 0 0 3px rgba(245, 158, 11, 0.6),
+    0 6px 24px rgba(245, 158, 11, 0.22);
+}
+
 .transaction__title {
   font-weight: 600;
 }
@@ -424,6 +432,17 @@ body {
   margin-bottom: 16px;
 }
 
+/* Extra warning when the row being deleted is also being edited */
+.modal__warning {
+  font-size: 13px;
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.1);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+}
+
 .modal__actions {
   display: flex;
   justify-content: flex-end;
@@ -529,6 +548,15 @@ body.theme-light .bg-gradient {
     rgba(15, 23, 42, 0.06),
     rgba(29, 78, 216, 0.08)
   );
+}
+
+/* Slightly deeper amber border on light bg so it does not look washed out */
+body.theme-light .transaction--editing {
+  border-color: #d97706;
+  background: rgba(245, 158, 11, 0.2);
+  box-shadow:
+    0 0 0 3px rgba(217, 119, 6, 0.45),
+    0 6px 20px rgba(217, 119, 6, 0.12);
 }
 
 @media (max-width: 900px) {
