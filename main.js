@@ -78,9 +78,62 @@ const saveToLocalStorage = () => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.transactions));
 };
 
+const isPlainObject = (value) => {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+};
+
+const isValidTransaction = (transaction) => {
+  if (!isPlainObject(transaction)) return false;
+
+  const { id, title, amount, category, date } = transaction;
+
+  return (
+    typeof id === "string" &&
+    id.trim().length > 0 &&
+    typeof title === "string" &&
+    title.trim().length > 0 &&
+    typeof amount === "number" &&
+    Number.isFinite(amount) &&
+    typeof category === "string" &&
+    category.trim().length > 0 &&
+    typeof date === "string" &&
+    date.trim().length > 0 &&
+    !Number.isNaN(new Date(date).getTime())
+  );
+};
+
+const resetStoredTransactions = () => {
+  state.transactions = [];
+  saveToLocalStorage();
+};
+
 const loadFromLocalStorage = () => {
   const stored = localStorage.getItem(STORAGE_KEY);
-  state.transactions = stored ? JSON.parse(stored) : [];
+
+  if (!stored) {
+    state.transactions = [];
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+
+    if (!Array.isArray(parsed)) {
+      throw new TypeError("Stored transactions must be an array.");
+    }
+
+    const validTransactions = parsed.filter(isValidTransaction);
+    state.transactions = validTransactions;
+
+    if (validTransactions.length !== parsed.length) {
+      saveToLocalStorage();
+      showToast("Some saved transactions were invalid and were removed.", "error");
+    }
+  } catch (error) {
+    console.warn("Recovered from invalid financeTrackerData.", error);
+    resetStoredTransactions();
+    showToast("Saved data was corrupted and has been reset.", "error");
+  }
 };
 
 const saveTheme = () => {
