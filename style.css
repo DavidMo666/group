@@ -57,10 +57,23 @@ body {
   gap: 24px;
 }
 
+.app__header > div:first-child {
+  flex: 0 0 540px;
+}
+
 .app__actions {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.app__actions .btn {
+  min-width: 112px;
+  min-height: 48px;
+  padding: 10px 14px;
+  white-space: nowrap;
 }
 
 .app__eyebrow {
@@ -172,10 +185,16 @@ body {
 
 .btn {
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 12px 18px;
   border-radius: 14px;
   border: none;
+  font-family: inherit;
+  font-size: 14px;
   font-weight: 600;
+  text-decoration: none;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -449,6 +468,133 @@ body {
   gap: 10px;
 }
 
+.privacy-banner {
+  position: fixed;
+  left: 24px;
+  right: 24px;
+  bottom: 18px;
+  z-index: 70;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px 24px;
+  align-items: end;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(15, 23, 42, 0.94);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.privacy-banner[hidden] {
+  display: none;
+}
+
+.privacy-banner__content {
+  display: grid;
+  gap: 8px;
+}
+
+.privacy-banner__eyebrow {
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.privacy-banner h2 {
+  font-size: 20px;
+}
+
+.privacy-banner p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.privacy-banner__status {
+  font-size: 13px;
+  margin-right: auto;
+  white-space: nowrap;
+}
+
+.privacy-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.privacy-banner__actions .btn {
+  min-width: 190px;
+}
+
+.privacy-banner__link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.privacy-banner__link:hover,
+.privacy-section a:hover {
+  text-decoration: underline;
+}
+
+.privacy-page {
+  max-width: 1160px;
+  margin: 0 auto;
+  display: grid;
+  gap: 24px;
+}
+
+.privacy-page__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.privacy-page__header .app__subtitle,
+.privacy-page__header .btn {
+  white-space: nowrap;
+}
+
+.privacy-policy {
+  display: grid;
+  gap: 16px;
+}
+
+.privacy-section {
+  display: grid;
+  gap: 10px;
+}
+
+.privacy-section h2 {
+  font-size: 20px;
+}
+
+.privacy-section p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.privacy-section a {
+  color: var(--primary);
+  overflow-wrap: anywhere;
+}
+
+.privacy-section code {
+  color: var(--text);
+  background: var(--card-strong);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
 .toast-container {
   position: fixed;
   bottom: 24px;
@@ -550,6 +696,10 @@ body.theme-light .bg-gradient {
   );
 }
 
+body.theme-light .privacy-banner {
+  background: rgba(248, 250, 252, 0.94);
+}
+
 /* Slightly deeper amber border on light bg so it does not look washed out */
 body.theme-light .transaction--editing {
   border-color: #d97706;
@@ -569,6 +719,45 @@ body.theme-light .transaction--editing {
     align-items: flex-start;
   }
 
+  .app__header > div:first-child {
+    flex-basis: auto;
+  }
+
+  .app__actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .privacy-banner {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .privacy-banner__actions {
+    justify-content: stretch;
+  }
+
+  .privacy-banner__status {
+    margin-right: 0;
+    white-space: normal;
+    width: 100%;
+  }
+
+  .privacy-banner__actions .btn,
+  .privacy-banner__link {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .privacy-page__header {
+    grid-template-columns: 1fr;
+  }
+
+  .privacy-page__header .app__subtitle,
+  .privacy-page__header .btn {
+    white-space: normal;
+  }
+
   .grid {
     grid-template-columns: 1fr;
   }
@@ -577,6 +766,13 @@ body.theme-light .transaction--editing {
 @media (max-width: 600px) {
   body {
     padding: 18px;
+  }
+
+  .privacy-banner {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    padding: 16px;
   }
 
   .transaction {
