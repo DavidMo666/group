@@ -33,6 +33,9 @@
           <button class="btn btn--ghost" id="resetFiltersBtn" type="button">
             Reset Filters
           </button>
+          <button class="btn btn--ghost" id="privacySettingsBtn" type="button">
+            Privacy Settings
+          </button>
         </div>
       </header>
 
@@ -187,6 +190,44 @@
         </div>
       </section>
     </div>
+
+    <section
+      class="privacy-banner"
+      id="privacyBanner"
+      aria-labelledby="privacyBannerTitle"
+      hidden
+    >
+      <div class="privacy-banner__content">
+        <p class="privacy-banner__eyebrow">Local storage notice</p>
+        <h2 id="privacyBannerTitle">Privacy & Storage Preferences</h2>
+        <p>
+          This app uses essential local storage to save your finance records on
+          this device.<br />
+          With your choice, it can also remember your light or dark theme
+          preference. It does not use third-party advertising or analytics
+          tracking.
+        </p>
+      </div>
+      <div class="privacy-banner__actions">
+        <p class="privacy-banner__status" id="privacyChoiceStatus"></p>
+        <button class="btn btn--ghost" id="privacyRejectBtn" type="button">
+          Reject persistent storage
+        </button>
+        <button class="btn btn--ghost" id="privacyEssentialBtn" type="button">
+          Store finance records only
+        </button>
+        <button
+          class="btn btn--ghost"
+          id="privacyPreferencesBtn"
+          type="button"
+        >
+          Store records + theme
+        </button>
+        <a class="privacy-banner__link" href="privacy.html">
+          Read Privacy Policy
+        </a>
+      </div>
+    </section>
 
     <div class="modal" id="confirmModal" aria-hidden="true">
       <div class="modal__backdrop" data-close="true"></div>

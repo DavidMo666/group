@@ -2,6 +2,13 @@
 
 const STORAGE_KEY = "financeTrackerData";
 const THEME_KEY = "financeTrackerTheme";
+const CONSENT_KEY = "financeTrackerConsent";
+const CONSENT_VERSION = 1;
+const CONSENT_MODES = {
+  REJECTED: "rejected",
+  ESSENTIAL: "essential-only",
+  PREFERENCES: "essential-plus-preferences",
+};
 
 const state = {
   transactions: [],
@@ -13,6 +20,7 @@ const state = {
   editingId: null,
   pendingDeleteId: null,
   theme: "dark",
+  consent: null,
 };
 
 const dom = {
@@ -33,6 +41,7 @@ const dom = {
   resetFiltersBtn: document.getElementById("resetFiltersBtn"),
   exportCsvBtn: document.getElementById("exportCsvBtn"),
   themeToggleBtn: document.getElementById("themeToggleBtn"),
+  privacySettingsBtn: document.getElementById("privacySettingsBtn"),
   transactionsList: document.getElementById("transactionsList"),
   resultsCount: document.getElementById("resultsCount"),
   totalBalance: document.getElementById("totalBalance"),
@@ -43,6 +52,11 @@ const dom = {
   confirmDeleteBtn: document.getElementById("confirmDeleteBtn"),
   cancelDeleteBtn: document.getElementById("cancelDeleteBtn"),
   modalEditingWarning: document.getElementById("modalEditingWarning"),
+  privacyBanner: document.getElementById("privacyBanner"),
+  privacyRejectBtn: document.getElementById("privacyRejectBtn"),
+  privacyEssentialBtn: document.getElementById("privacyEssentialBtn"),
+  privacyPreferencesBtn: document.getElementById("privacyPreferencesBtn"),
+  privacyChoiceStatus: document.getElementById("privacyChoiceStatus"),
   toastContainer: document.getElementById("toastContainer"),
   skeleton: document.getElementById("skeleton"),
 };
@@ -76,6 +90,15 @@ const generateID = () => {
 };
 
 const saveToLocalStorage = () => {
+  if (state.consent?.mode === CONSENT_MODES.REJECTED) {
+    localStorage.removeItem(STORAGE_KEY);
+    return;
+  }
+
+  if (!hasTransactionStorageConsent()) {
+    return;
+  }
+
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.transactions));
 };
 
@@ -108,7 +131,126 @@ const resetStoredTransactions = () => {
   saveToLocalStorage();
 };
 
+const isValidConsent = (consent) => {
+  return (
+    isPlainObject(consent) &&
+    consent.version === CONSENT_VERSION &&
+    [
+      CONSENT_MODES.REJECTED,
+      CONSENT_MODES.ESSENTIAL,
+      CONSENT_MODES.PREFERENCES,
+    ].includes(
+      consent.mode,
+    ) &&
+    typeof consent.recordedAt === "string" &&
+    !Number.isNaN(new Date(consent.recordedAt).getTime())
+  );
+};
+
+const loadConsent = () => {
+  const stored = localStorage.getItem(CONSENT_KEY);
+
+  if (!stored) {
+    state.consent = null;
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+    state.consent = isValidConsent(parsed) ? parsed : null;
+  } catch (error) {
+    console.warn("Recovered from invalid financeTrackerConsent.", error);
+    state.consent = null;
+  }
+
+  if (!state.consent) {
+    localStorage.removeItem(CONSENT_KEY);
+  }
+};
+
+const hasThemePreferenceConsent = () => {
+  return state.consent?.mode === CONSENT_MODES.PREFERENCES;
+};
+
+const hasTransactionStorageConsent = () => {
+  return (
+    state.consent?.mode === CONSENT_MODES.ESSENTIAL ||
+    state.consent?.mode === CONSENT_MODES.PREFERENCES
+  );
+};
+
+const getConsentStatusText = () => {
+  if (!state.consent) {
+    return "No storage preference has been recorded yet.";
+  }
+
+  if (state.consent.mode === CONSENT_MODES.REJECTED) {
+    return "Current choice: persistent storage rejected. New records disappear after refresh.";
+  }
+
+  if (hasThemePreferenceConsent()) {
+    return "Current choice: finance records and theme preference are stored.";
+  }
+
+  return "Current choice: finance records are stored. Theme preference is not stored.";
+};
+
+const renderPrivacyChoiceStatus = () => {
+  dom.privacyChoiceStatus.textContent = getConsentStatusText();
+};
+
+const openPrivacyBanner = () => {
+  renderPrivacyChoiceStatus();
+  dom.privacyBanner.hidden = false;
+};
+
+const closePrivacyBanner = () => {
+  dom.privacyBanner.hidden = true;
+};
+
+const saveConsentChoice = (mode) => {
+  state.consent = {
+    version: CONSENT_VERSION,
+    mode,
+    recordedAt: new Date().toISOString(),
+  };
+
+  localStorage.setItem(CONSENT_KEY, JSON.stringify(state.consent));
+
+  if (mode === CONSENT_MODES.REJECTED) {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(THEME_KEY);
+  } else if (!hasThemePreferenceConsent()) {
+    if (state.transactions.length === 0 && localStorage.getItem(STORAGE_KEY)) {
+      loadFromLocalStorage();
+    }
+    localStorage.removeItem(THEME_KEY);
+    saveToLocalStorage();
+  } else {
+    if (state.transactions.length === 0 && localStorage.getItem(STORAGE_KEY)) {
+      loadFromLocalStorage();
+    }
+    saveToLocalStorage();
+    saveTheme();
+  }
+
+  renderPrivacyChoiceStatus();
+  closePrivacyBanner();
+  showToast("Privacy storage preference saved.");
+};
+
 const loadFromLocalStorage = () => {
+  if (state.consent?.mode === CONSENT_MODES.REJECTED) {
+    localStorage.removeItem(STORAGE_KEY);
+    state.transactions = [];
+    return;
+  }
+
+  if (!hasTransactionStorageConsent()) {
+    state.transactions = [];
+    return;
+  }
+
   const stored = localStorage.getItem(STORAGE_KEY);
 
   if (!stored) {
@@ -138,7 +280,12 @@ const loadFromLocalStorage = () => {
 };
 
 const saveTheme = () => {
-  localStorage.setItem(THEME_KEY, state.theme);
+  if (hasThemePreferenceConsent()) {
+    localStorage.setItem(THEME_KEY, state.theme);
+    return;
+  }
+
+  localStorage.removeItem(THEME_KEY);
 };
 
 const setTheme = (theme) => {
@@ -150,8 +297,10 @@ const setTheme = (theme) => {
 };
 
 const loadTheme = () => {
-  const storedTheme = localStorage.getItem(THEME_KEY);
-  setTheme(storedTheme || "dark");
+  const storedTheme = hasThemePreferenceConsent()
+    ? localStorage.getItem(THEME_KEY)
+    : null;
+  setTheme(storedTheme === "light" ? "light" : "dark");
 };
 
 const showToast = (message, variant = "success") => {
@@ -556,6 +705,7 @@ const exportToCSV = () => {
 };
 
 const initializeApp = () => {
+  loadConsent();
   loadFromLocalStorage();
   loadTheme();
   renderApp();
@@ -625,6 +775,20 @@ const initializeApp = () => {
     setTheme(state.theme === "dark" ? "light" : "dark");
   });
 
+  dom.privacySettingsBtn.addEventListener("click", openPrivacyBanner);
+
+  dom.privacyRejectBtn.addEventListener("click", () => {
+    saveConsentChoice(CONSENT_MODES.REJECTED);
+  });
+
+  dom.privacyEssentialBtn.addEventListener("click", () => {
+    saveConsentChoice(CONSENT_MODES.ESSENTIAL);
+  });
+
+  dom.privacyPreferencesBtn.addEventListener("click", () => {
+    saveConsentChoice(CONSENT_MODES.PREFERENCES);
+  });
+
   dom.confirmDeleteBtn.addEventListener("click", () => {
     if (state.pendingDeleteId) {
       deleteTransaction(state.pendingDeleteId);
@@ -639,6 +803,10 @@ const initializeApp = () => {
       closeConfirmModal();
     }
   });
+
+  if (!state.consent) {
+    openPrivacyBanner();
+  }
 };
 
 initializeApp();
