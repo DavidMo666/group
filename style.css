@@ -217,6 +217,16 @@ body {
   box-shadow: 0 18px 30px rgba(15, 23, 42, 0.4);
 }
 
+.form__field input:focus-visible,
+.form__field select:focus-visible,
+.btn:focus-visible,
+.edit-btn:focus-visible,
+.delete-btn:focus-visible,
+.modal__content:focus-visible {
+  outline: 3px solid rgba(56, 189, 248, 0.85);
+  outline-offset: 3px;
+}
+
 .filters {
   display: grid;
   gap: 12px;
