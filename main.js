@@ -284,6 +284,7 @@ const setTheme = (theme) => {
   dom.themeToggleBtn.textContent =
     theme === "light" ? "Dark Mode" : "Light Mode";
   saveTheme();
+  renderChart();
 };
 
 const loadTheme = () => {
@@ -291,6 +292,10 @@ const loadTheme = () => {
     ? localStorage.getItem(THEME_KEY)
     : null;
   setTheme(storedTheme === "light" ? "light" : "dark");
+};
+
+const getCSSVariable = (name) => {
+  return getComputedStyle(document.body).getPropertyValue(name).trim();
 };
 
 const showToast = (message, variant = "success") => {
@@ -311,12 +316,14 @@ const clearErrors = () => {
 
   fields.forEach(({ input, error }) => {
     input.classList.remove("is-invalid");
+    input.setAttribute("aria-invalid", "false");
     error.textContent = "";
   });
 };
 
 const setError = (input, errorEl, message) => {
   input.classList.add("is-invalid");
+  input.setAttribute("aria-invalid", "true");
   errorEl.textContent = message;
 };
 
@@ -560,7 +567,7 @@ const renderTransactions = () => {
   if (filtered.length === 0) {
     dom.transactionsList.innerHTML = `
       <div class="transactions__empty">
-        <div class="empty__icon">+</div>
+        <div class="empty__icon" aria-hidden="true">+</div>
         <p>No transactions yet. Add your first one to get started.</p>
         <button class="btn btn--accent empty-add-btn" type="button">Add First Transaction</button>
       </div>
@@ -588,6 +595,8 @@ const renderTransactionItem = (tx) => {
   const formattedDate = formatDate(tx.date);
   // Highlight the row being edited 
   const editingClass = state.editingId === tx.id ? " transaction--editing" : "";
+  const editLabel = `Edit transaction ${tx.title}`;
+  const deleteLabel = `Delete transaction ${tx.title}`;
 
   return `
     <div class="transaction${editingClass}">
@@ -600,8 +609,18 @@ const renderTransactionItem = (tx) => {
       </div>
       <div>
         <p class="amount ${typeClass}">${escapeHTML(formattedAmount)}</p>
-        <button class="edit-btn" data-id="${escapeHTML(tx.id)}">Edit</button>
-        <button class="delete-btn" data-id="${escapeHTML(tx.id)}">Delete</button>
+        <button
+          class="edit-btn"
+          type="button"
+          data-id="${escapeHTML(tx.id)}"
+          aria-label="${escapeHTML(editLabel)}"
+        >Edit</button>
+        <button
+          class="delete-btn"
+          type="button"
+          data-id="${escapeHTML(tx.id)}"
+          aria-label="${escapeHTML(deleteLabel)}"
+        >Delete</button>
       </div>
     </div>
   `;
@@ -673,7 +692,7 @@ const renderChart = () => {
   const dpr = window.devicePixelRatio || 1;
 
   const displayWidth = canvas.clientWidth;
-  const displayHeight = 260;
+  const displayHeight = canvas.clientHeight || 260;
 
   canvas.width = displayWidth * dpr;
   canvas.height = displayHeight * dpr;
@@ -689,42 +708,66 @@ const renderChart = () => {
   const expenses = Math.abs(
     amounts.filter((a) => a < 0).reduce((s, a) => s + a, 0),
   );
+  const formattedIncome = formatCurrency(income);
+  const formattedExpenses = formatCurrency(expenses);
 
-  const maxValue = Math.max(income, expenses, 1);
-  const barWidth = 120;
-  const gap = 80;
-  const baseY = height - 40;
-
-  const incomeHeight = (income / maxValue) * (height - 80);
-  const expenseHeight = (expenses / maxValue) * (height - 80);
-
-  ctx.strokeStyle = "rgba(255,255,255,0.08)";
-  ctx.beginPath();
-  ctx.moveTo(40, baseY);
-  ctx.lineTo(width - 40, baseY);
-  ctx.stroke();
-
-  ctx.fillStyle = "#22c55e";
-  ctx.fillRect(160, baseY - incomeHeight, barWidth, incomeHeight);
-
-  ctx.fillStyle = "#f97316";
-  ctx.fillRect(
-    160 + barWidth + gap,
-    baseY - expenseHeight,
-    barWidth,
-    expenseHeight,
+  canvas.setAttribute(
+    "aria-label",
+    `Cash flow bar chart showing total income ${formattedIncome} and total expenses ${formattedExpenses}.`,
   );
 
-  ctx.fillStyle = "#f8f4e9";
-  ctx.font = "14px sans-serif";
-  ctx.fillText("Income", 170, baseY + 20);
-  ctx.fillText("Expense", 160 + barWidth + gap, baseY + 20);
+  const maxValue = Math.max(income, expenses, 1);
+  const horizontalPadding = Math.max(28, Math.min(56, width * 0.1));
+  const barWidth = Math.max(
+    52,
+    Math.min(120, (width - horizontalPadding * 2 - 36) / 2),
+  );
+  const gap = Math.max(
+    28,
+    Math.min(80, width - horizontalPadding * 2 - barWidth * 2),
+  );
+  const totalBarsWidth = barWidth * 2 + gap;
+  const startX = (width - totalBarsWidth) / 2;
+  const incomeX = startX;
+  const expenseX = startX + barWidth + gap;
+  const incomeCenterX = incomeX + barWidth / 2;
+  const expenseCenterX = expenseX + barWidth / 2;
+  const chartTop = 34;
+  const baseY = height - 44;
+  const labelY = height - 20;
+  const availableBarHeight = Math.max(80, height - 96);
 
-  ctx.fillText(formatCurrency(income), 150, baseY - incomeHeight - 10);
+  const incomeHeight = (income / maxValue) * availableBarHeight;
+  const expenseHeight = (expenses / maxValue) * availableBarHeight;
+
+  ctx.strokeStyle = getCSSVariable("--chart-axis") || "rgba(255,255,255,0.16)";
+  ctx.beginPath();
+  ctx.moveTo(horizontalPadding, baseY);
+  ctx.lineTo(width - horizontalPadding, baseY);
+  ctx.stroke();
+
+  ctx.fillStyle = getCSSVariable("--income") || "#22c55e";
+  ctx.fillRect(incomeX, baseY - incomeHeight, barWidth, incomeHeight);
+
+  ctx.fillStyle = getCSSVariable("--expense") || "#f43f5e";
+  ctx.fillRect(expenseX, baseY - expenseHeight, barWidth, expenseHeight);
+
+  ctx.fillStyle = getCSSVariable("--chart-label") || "#f8f4e9";
+  ctx.font = "600 13px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Income", incomeCenterX, labelY);
+  ctx.fillText("Expense", expenseCenterX, labelY);
+
+  ctx.font = "600 13px sans-serif";
   ctx.fillText(
-    formatCurrency(expenses),
-    150 + barWidth + gap,
-    baseY - expenseHeight - 10,
+    formattedIncome,
+    incomeCenterX,
+    Math.max(chartTop, baseY - incomeHeight - 10),
+  );
+  ctx.fillText(
+    formattedExpenses,
+    expenseCenterX,
+    Math.max(chartTop, baseY - expenseHeight - 10),
   );
 };
 
@@ -865,6 +908,7 @@ const initializeApp = () => {
   });
 
   document.addEventListener("keydown", handleConfirmModalKeydown);
+  window.addEventListener("resize", renderChart);
 
   if (!state.consent) {
     openPrivacyBanner();
