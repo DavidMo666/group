@@ -1,6 +1,10 @@
 :root {
   --bg: #0f172a;
   --bg-accent: #111827;
+  --body-background:
+    radial-gradient(circle at 20% 20%, #1e293b, transparent 55%),
+    radial-gradient(circle at 80% 10%, #0ea5e9, transparent 35%),
+    radial-gradient(circle at 80% 85%, #7c3aed, transparent 40%), var(--bg);
   --card: rgba(255, 255, 255, 0.08);
   --card-strong: rgba(255, 255, 255, 0.14);
   --text: #f8fafc;
@@ -9,6 +13,15 @@
   --income: #22c55e;
   --expense: #f43f5e;
   --primary: #38bdf8;
+  --focus-ring: rgba(56, 189, 248, 0.9);
+  --chart-surface: rgba(15, 23, 42, 0.35);
+  --chart-axis: rgba(255, 255, 255, 0.16);
+  --chart-label: #f8f4e9;
+  --transaction-bg: rgba(15, 23, 42, 0.4);
+  --transaction-hover: rgba(15, 23, 42, 0.55);
+  --transaction-border: rgba(255, 255, 255, 0.05);
+  --badge-bg: rgba(56, 189, 248, 0.15);
+  --badge-text: #bae6fd;
   --shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
   --radius: 18px;
   --font:
@@ -21,14 +34,15 @@
   padding: 0;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   min-height: 100vh;
   font-family: var(--font);
   color: var(--text);
-  background:
-    radial-gradient(circle at 20% 20%, #1e293b, transparent 55%),
-    radial-gradient(circle at 80% 10%, #0ea5e9, transparent 35%),
-    radial-gradient(circle at 80% 85%, #7c3aed, transparent 40%), var(--bg);
+  background: var(--body-background);
   padding: 32px;
 }
 
@@ -223,7 +237,7 @@ body {
 .edit-btn:focus-visible,
 .delete-btn:focus-visible,
 .modal__content:focus-visible {
-  outline: 3px solid rgba(56, 189, 248, 0.85);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -267,8 +281,8 @@ body {
   gap: 16px;
   padding: 14px 16px;
   border-radius: 14px;
-  background: rgba(15, 23, 42, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--transaction-bg);
+  border: 1px solid var(--transaction-border);
   transition:
     transform 0.2s ease,
     background 0.2s ease;
@@ -276,7 +290,7 @@ body {
 
 .transaction:hover {
   transform: translateY(-2px);
-  background: rgba(15, 23, 42, 0.55);
+  background: var(--transaction-hover);
 }
 
 .transaction--editing {
@@ -304,8 +318,8 @@ body {
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 12px;
-  background: rgba(56, 189, 248, 0.15);
-  color: #bae6fd;
+  background: var(--badge-bg);
+  color: var(--badge-text);
 }
 
 .amount {
@@ -324,10 +338,13 @@ body {
 
 .delete-btn {
   margin-top: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
   background: transparent;
   border: none;
   color: var(--muted);
   font-size: 12px;
+  font-family: inherit;
   cursor: pointer;
 }
 
@@ -337,10 +354,13 @@ body {
 
 .edit-btn {
   margin-top: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
   background: transparent;
   border: none;
   color: var(--muted);
   font-size: 12px;
+  font-family: inherit;
   cursor: pointer;
   margin-right: 8px;
 }
@@ -374,7 +394,7 @@ body {
 #financeChart {
   width: 100%;
   height: 260px;
-  background: rgba(15, 23, 42, 0.35);
+  background: var(--chart-surface);
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 6px;
@@ -679,12 +699,27 @@ body {
 body.theme-light {
   --bg: #f8fafc;
   --bg-accent: #e2e8f0;
-  --card: rgba(15, 23, 42, 0.04);
+  --body-background:
+    radial-gradient(circle at 20% 15%, rgba(186, 230, 253, 0.72), transparent 38%),
+    radial-gradient(circle at 90% 5%, rgba(191, 219, 254, 0.72), transparent 35%),
+    linear-gradient(180deg, #f8fafc 0%, #eef6ff 45%, #f8fafc 100%);
+  --card: rgba(255, 255, 255, 0.82);
   --card-strong: rgba(15, 23, 42, 0.08);
   --text: #0f172a;
-  --muted: #475569;
-  --border: rgba(15, 23, 42, 0.1);
+  --muted: #334155;
+  --border: rgba(15, 23, 42, 0.16);
+  --income: #15803d;
+  --expense: #be123c;
   --primary: #1d4ed8;
+  --focus-ring: rgba(29, 78, 216, 0.95);
+  --chart-surface: rgba(15, 23, 42, 0.78);
+  --chart-axis: rgba(255, 255, 255, 0.2);
+  --chart-label: #f8fafc;
+  --transaction-bg: rgba(255, 255, 255, 0.88);
+  --transaction-hover: rgba(239, 246, 255, 0.95);
+  --transaction-border: rgba(15, 23, 42, 0.12);
+  --badge-bg: rgba(29, 78, 216, 0.12);
+  --badge-text: #1e3a8a;
   --shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
 }
 
@@ -698,6 +733,11 @@ body.theme-light .bg-gradient {
 
 body.theme-light .privacy-banner {
   background: rgba(248, 250, 252, 0.94);
+}
+
+body.theme-light .toast {
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text);
 }
 
 /* Slightly deeper amber border on light bg so it does not look washed out */

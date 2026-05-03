@@ -63,7 +63,13 @@
           <h3 class="section-title">Cash Flow Overview</h3>
           <p class="transactions__meta">Income vs Expense</p>
         </div>
-        <canvas id="financeChart" width="800" height="260"></canvas>
+        <canvas
+          id="financeChart"
+          width="800"
+          height="260"
+          role="img"
+          aria-label="Cash flow bar chart showing total income $0.00 and total expenses $0.00."
+        ></canvas>
       </section>
 
       <section class="grid">
@@ -76,9 +82,10 @@
                 id="titleInput"
                 type="text"
                 placeholder="e.g., Freelance Payment"
+                aria-describedby="titleError"
                 required
               />
-              <small class="error" id="titleError"></small>
+              <small class="error" id="titleError" aria-live="polite"></small>
             </label>
 
             <label class="form__field">
@@ -87,14 +94,19 @@
                 id="amountInput"
                 type="number"
                 placeholder="e.g., 1200 or -45"
+                aria-describedby="amountError"
                 required
               />
-              <small class="error" id="amountError"></small>
+              <small class="error" id="amountError" aria-live="polite"></small>
             </label>
 
             <label class="form__field">
               <span>Category</span>
-              <select id="categoryInput" required>
+              <select
+                id="categoryInput"
+                aria-describedby="categoryError"
+                required
+              >
                 <option value="" disabled selected>Select category</option>
                 <option>Salary</option>
                 <option>Business</option>
@@ -107,13 +119,18 @@
                 <option>Education</option>
                 <option>Other</option>
               </select>
-              <small class="error" id="categoryError"></small>
+              <small class="error" id="categoryError" aria-live="polite"></small>
             </label>
 
             <label class="form__field">
               <span>Date</span>
-              <input id="dateInput" type="date" required />
-              <small class="error" id="dateError"></small>
+              <input
+                id="dateInput"
+                type="date"
+                aria-describedby="dateError"
+                required
+              />
+              <small class="error" id="dateError" aria-live="polite"></small>
             </label>
 
             <div class="form__actions">
@@ -181,7 +198,7 @@
 
         <div class="transactions__list" id="transactionsList">
           <div class="transactions__empty">
-            <div class="empty__icon">+</div>
+            <div class="empty__icon" aria-hidden="true">+</div>
             <p>No transactions yet. Add your first one to get started.</p>
             <button class="btn btn--accent empty-add-btn" type="button">
               Add First Transaction
@@ -253,7 +270,13 @@
       </div>
     </div>
 
-    <div class="toast-container" id="toastContainer"></div>
+    <div
+      class="toast-container"
+      id="toastContainer"
+      role="status"
+      aria-live="polite"
+      aria-atomic="false"
+    ></div>
 
     <script src="main.js"></script>
   </body>
