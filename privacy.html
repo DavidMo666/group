@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-page="privacy">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,20 +12,50 @@
     <main class="privacy-page">
       <header class="privacy-page__header">
         <div>
-          <p class="app__eyebrow">Privacy Policy</p>
-          <h1 class="app__title">Advanced Finance Tracker</h1>
-          <p class="app__subtitle">
+          <p class="app__eyebrow" data-i18n="privacy.eyebrow">Privacy Policy</p>
+          <h1 class="app__title" data-i18n="privacy.hero.title">
+            Advanced Finance Tracker
+          </h1>
+          <p class="app__subtitle" data-i18n="privacy.hero.subtitle">
             This page explains what this app stores on your device, why it is
             stored, and how your storage choices work.
           </p>
         </div>
-        <a class="btn btn--ghost" href="index.html">Back to app</a>
+        
+        <div class="privacy-page__actions">
+          <div
+            class="lang-switch"
+            role="group"
+            aria-label="Language"
+            data-i18n-aria-label="lang.switch"
+          >
+            <button
+              class="btn btn--ghost lang-switch__btn"
+              type="button"
+              data-lang="en"
+              title="English"
+            >
+              EN
+            </button>
+            <button
+              class="btn btn--ghost lang-switch__btn"
+              type="button"
+              data-lang="zh"
+              title="中文"
+            >
+              中文
+            </button>
+          </div>
+          <a class="btn btn--ghost" href="index.html" data-i18n="privacy.back">
+            Back to app
+          </a>
+        </div>
       </header>
 
       <section class="privacy-policy">
         <article class="card privacy-section">
-          <h2>What this app stores on your device</h2>
-          <p>
+          <h2 data-i18n="privacy.s1.h">What this app stores on your device</h2>
+          <p data-i18n="privacy.s1.p">
             This app stores finance tracker data in your browser's local
             storage. The main stored records are
             <code>financeTrackerData</code> for your transactions,
@@ -38,8 +68,8 @@
         </article>
 
         <article class="card privacy-section">
-          <h2>Why the data is stored</h2>
-          <p>
+          <h2 data-i18n="privacy.s2.h">Why the data is stored</h2>
+          <p data-i18n="privacy.s2.p">
             Transaction data and theme preference are stored only when you allow
             persistent storage, so the tracker can keep your records and theme
             available after a page refresh. The consent record is stored so the
@@ -48,8 +78,8 @@
         </article>
 
         <article class="card privacy-section">
-          <h2>Which storage is optional</h2>
-          <p>
+          <h2 data-i18n="privacy.s3.h">Which storage is optional</h2>
+          <p data-i18n="privacy.s3.p">
             <code>financeTrackerConsent</code> is used to remember your storage
             choice. <code>financeTrackerData</code> and
             <code>financeTrackerTheme</code> are optional persistent storage:
@@ -59,8 +89,8 @@
         </article>
 
         <article class="card privacy-section">
-          <h2>How your choices work</h2>
-          <p>
+          <h2 data-i18n="privacy.s4.h">How your choices work</h2>
+          <p data-i18n="privacy.s4.p">
             If you reject persistent storage, new finance records and theme
             changes are not saved to local storage and disappear after refresh.
             If you allow persistent storage, the app saves transaction data,
@@ -71,8 +101,8 @@
         </article>
 
         <article class="card privacy-section">
-          <h2>How long data remains</h2>
-          <p>
+          <h2 data-i18n="privacy.s5.h">How long data remains</h2>
+          <p data-i18n="privacy.s5.p">
             The stored data remains in your browser until you delete transactions,
             change your storage preference, clear browser storage, or remove the
             site data for this app. CSV files are only created when you choose to
@@ -81,8 +111,8 @@
         </article>
 
         <article class="card privacy-section">
-          <h2>Third parties</h2>
-          <p>
+          <h2 data-i18n="privacy.s6.h">Third parties</h2>
+          <p data-i18n="privacy.s6.p">
             This app does not use third-party advertising, analytics, social
             tracking, or remote data processing. Transaction data is processed in
             your browser and is not uploaded to a server by this app.
@@ -90,10 +120,12 @@
         </article>
 
         <article class="card privacy-section">
-          <h2>Contact</h2>
+          <h2 data-i18n="privacy.s7.h">Contact</h2>
           <p>
-            For privacy questions or correction requests about this project, use
-            the GitHub Issues page for the repository:
+            <span data-i18n="privacy.s7.p.before">
+              For privacy questions or correction requests about this project, use
+              the GitHub Issues page for the repository:
+            </span>
             <a href="https://github.com/DavidMo666/group/issues">
               https://github.com/DavidMo666/group/issues
             </a>
@@ -101,5 +133,16 @@
         </article>
       </section>
     </main>
+
+    <script src="i18n.js"></script>
+    <script>
+      "use strict";
+      document.querySelectorAll("[data-lang]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const lang = btn.getAttribute("data-lang");
+          if (lang) window.financeI18n.setLang(/** @type {"en"|"zh"} */ (lang));
+        });
+      });
+    </script>
   </body>
 </html>

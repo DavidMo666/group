@@ -70,6 +70,9 @@ const dom = {
   skeleton: document.getElementById("skeleton"),
 };
 
+/** i18n entry point (injected by i18n.js) */
+const I18n = window.financeI18n;
+
 const escapeHTML = (str) => {
   const div = document.createElement("div");
   div.appendChild(document.createTextNode(str));
@@ -177,18 +180,18 @@ const hasPersistentStorageConsent = () => {
 
 const getConsentStatusText = () => {
   if (!state.consent) {
-    return "No storage preference has been recorded yet.";
+    return I18n.t("consent.status.none");
   }
 
   if (state.consent.mode === CONSENT_MODES.REJECTED) {
-    return "Current choice: persistent storage rejected. New records disappear after refresh.";
+    return I18n.t("consent.status.rejected");
   }
 
   if (hasPersistentStorageConsent()) {
-    return "Current choice: persistent storage allowed. Records and theme are saved.";
+    return I18n.t("consent.status.allowed");
   }
 
-  return "No storage preference has been recorded yet.";
+  return I18n.t("consent.status.none");
 };
 
 const renderPrivacyChoiceStatus = () => {
@@ -226,7 +229,7 @@ const saveConsentChoice = (mode) => {
 
   renderPrivacyChoiceStatus();
   closePrivacyBanner();
-  showToast("Privacy storage preference saved.");
+  showToast(I18n.t("toast.privacySaved"));
 };
 
 const loadFromLocalStorage = () => {
@@ -260,12 +263,12 @@ const loadFromLocalStorage = () => {
 
     if (validTransactions.length !== parsed.length) {
       saveToLocalStorage();
-      showToast("Some saved transactions were invalid and were removed.", "error");
+      showToast(I18n.t("toast.invalidRemoved"), "error");
     }
   } catch (error) {
     console.warn("Recovered from invalid financeTrackerData.", error);
     resetStoredTransactions();
-    showToast("Saved data was corrupted and has been reset.", "error");
+    showToast(I18n.t("toast.dataReset"), "error");
   }
 };
 
@@ -281,8 +284,9 @@ const saveTheme = () => {
 const setTheme = (theme) => {
   state.theme = theme;
   document.body.classList.toggle("theme-light", theme === "light");
+  
   dom.themeToggleBtn.textContent =
-    theme === "light" ? "Dark Mode" : "Light Mode";
+    theme === "light" ? I18n.t("actions.themeDark") : I18n.t("actions.themeLight");
   saveTheme();
   renderChart();
 };
@@ -339,22 +343,22 @@ const validateForm = () => {
   let isValid = true;
 
   if (!title) {
-    setError(dom.titleInput, dom.titleError, "Title is required.");
+    setError(dom.titleInput, dom.titleError, I18n.t("validation.title"));
     isValid = false;
   }
 
   if (!amountValue || Number.isNaN(amount) || amount === 0) {
-    setError(dom.amountInput, dom.amountError, "Enter a valid amount.");
+    setError(dom.amountInput, dom.amountError, I18n.t("validation.amount"));
     isValid = false;
   }
 
   if (!category) {
-    setError(dom.categoryInput, dom.categoryError, "Select a category.");
+    setError(dom.categoryInput, dom.categoryError, I18n.t("validation.category"));
     isValid = false;
   }
 
   if (!date) {
-    setError(dom.dateInput, dom.dateError, "Pick a date.");
+    setError(dom.dateInput, dom.dateError, I18n.t("validation.date"));
     isValid = false;
   }
 
@@ -364,14 +368,14 @@ const validateForm = () => {
 const resetFormState = () => {
   dom.form.reset();
   state.editingId = null;
-  dom.submitBtn.textContent = "Add Transaction";
+  dom.submitBtn.textContent = I18n.t("form.submit.add");
   dom.cancelEditBtn.hidden = true;
   clearErrors();
 };
 
 const addTransaction = () => {
   if (!validateForm()) {
-    showToast("Please fix the highlighted fields.", "error");
+    showToast(I18n.t("toast.fixFields"), "error");
     return;
   }
 
@@ -386,14 +390,14 @@ const addTransaction = () => {
       (tx) => tx.id === state.editingId,
     );
     if (!stillExists) {
-      showToast("Transaction no longer exists.", "error");
+      showToast(I18n.t("toast.txGone"), "error");
       resetFormState();
       return;
     }
     state.transactions = state.transactions.map((tx) =>
       tx.id === state.editingId ? { ...tx, title, amount, category, date } : tx,
     );
-    showToast("Transaction updated.");
+    showToast(I18n.t("toast.txUpdated"));
   } else {
     const newTransaction = {
       id: generateID(),
@@ -404,7 +408,7 @@ const addTransaction = () => {
     };
 
     state.transactions = [newTransaction, ...state.transactions];
-    showToast("Transaction added.");
+    showToast(I18n.t("toast.txAdded"));
   }
 
   resetFormState();
@@ -425,15 +429,13 @@ const startEditing = (id) => {
   dom.dateInput.value = transaction.date;
 
   state.editingId = id;
-  dom.submitBtn.textContent = "Save Changes";
+  dom.submitBtn.textContent = I18n.t("form.submit.save");
   dom.cancelEditBtn.hidden = false;
   dom.titleInput.focus();
 
   // When switching edit target, tell user unsaved changes on the previous row were discarded
   showToast(
-    isSwitching
-      ? "Switched to a different transaction. Unsaved changes discarded."
-      : "Editing mode enabled.",
+    isSwitching ? I18n.t("toast.editSwitch") : I18n.t("toast.editOn"),
     isSwitching ? "error" : "success",
   );
 
@@ -449,7 +451,7 @@ const deleteTransaction = (id) => {
   state.transactions = state.transactions.filter((tx) => tx.id !== id);
   saveToLocalStorage();
   renderApp();
-  showToast("Transaction deleted.");
+  showToast(I18n.t("toast.txDeleted"));
 };
 
 const getConfirmModalFocusableElements = () => {
@@ -562,14 +564,16 @@ const renderSummary = () => {
 const renderTransactions = () => {
   const filtered = filterTransactions();
 
-  dom.resultsCount.textContent = `${filtered.length} results`;
+  dom.resultsCount.textContent = I18n.t("list.results", {
+    count: filtered.length,
+  });
 
   if (filtered.length === 0) {
     dom.transactionsList.innerHTML = `
       <div class="transactions__empty">
         <div class="empty__icon" aria-hidden="true">+</div>
-        <p>No transactions yet. Add your first one to get started.</p>
-        <button class="btn btn--accent empty-add-btn" type="button">Add First Transaction</button>
+        <p>${escapeHTML(I18n.t("list.empty"))}</p>
+        <button class="btn btn--accent empty-add-btn" type="button">${escapeHTML(I18n.t("list.addFirst"))}</button>
       </div>
     `;
     return;
@@ -595,15 +599,15 @@ const renderTransactionItem = (tx) => {
   const formattedDate = formatDate(tx.date);
   // Highlight the row being edited 
   const editingClass = state.editingId === tx.id ? " transaction--editing" : "";
-  const editLabel = `Edit transaction ${tx.title}`;
-  const deleteLabel = `Delete transaction ${tx.title}`;
+  const editLabel = I18n.t("tx.edit.aria", { title: tx.title });
+  const deleteLabel = I18n.t("tx.delete.aria", { title: tx.title });
 
   return `
     <div class="transaction${editingClass}">
       <div>
         <p class="transaction__title">${escapeHTML(tx.title)}</p>
         <div class="transaction__meta">
-          <span class="badge">${escapeHTML(tx.category)}</span>
+          <span class="badge">${escapeHTML(I18n.categoryLabel(tx.category))}</span>
           <span>${escapeHTML(formattedDate)}</span>
         </div>
       </div>
@@ -614,13 +618,13 @@ const renderTransactionItem = (tx) => {
           type="button"
           data-id="${escapeHTML(tx.id)}"
           aria-label="${escapeHTML(editLabel)}"
-        >Edit</button>
+        >${escapeHTML(I18n.t("tx.edit"))}</button>
         <button
           class="delete-btn"
           type="button"
           data-id="${escapeHTML(tx.id)}"
           aria-label="${escapeHTML(deleteLabel)}"
-        >Delete</button>
+        >${escapeHTML(I18n.t("tx.delete"))}</button>
       </div>
     </div>
   `;
@@ -652,7 +656,7 @@ const groupByMonth = (transactions) => {
   const lookup = new Map();
 
   sorted.forEach((tx) => {
-    const label = new Date(tx.date).toLocaleDateString("en-US", {
+    const label = new Date(tx.date).toLocaleDateString(I18n.getLocaleTag(), {
       month: "long",
       year: "numeric",
     });
@@ -669,7 +673,7 @@ const groupByMonth = (transactions) => {
 };
 
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(I18n.getLocaleTag(), {
     style: "currency",
     currency: "USD",
   }).format(amount);
@@ -677,7 +681,7 @@ const formatCurrency = (amount) => {
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(I18n.getLocaleTag(), {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -713,7 +717,7 @@ const renderChart = () => {
 
   canvas.setAttribute(
     "aria-label",
-    `Cash flow bar chart showing total income ${formattedIncome} and total expenses ${formattedExpenses}.`,
+    I18n.t("chart.aria", { income: formattedIncome, expenses: formattedExpenses }),
   );
 
   const maxValue = Math.max(income, expenses, 1);
@@ -755,8 +759,8 @@ const renderChart = () => {
   ctx.fillStyle = getCSSVariable("--chart-label") || "#f8f4e9";
   ctx.font = "600 13px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("Income", incomeCenterX, labelY);
-  ctx.fillText("Expense", expenseCenterX, labelY);
+  ctx.fillText(I18n.t("chart.income"), incomeCenterX, labelY);
+  ctx.fillText(I18n.t("chart.expense"), expenseCenterX, labelY);
 
   ctx.font = "600 13px sans-serif";
   ctx.fillText(
@@ -779,11 +783,16 @@ const renderApp = () => {
 
 const exportToCSV = () => {
   if (state.transactions.length === 0) {
-    showToast("No data to export.", "error");
+    showToast(I18n.t("toast.noExport"), "error");
     return;
   }
 
-  const headers = ["Title", "Amount", "Category", "Date"];
+  const headers = [
+    I18n.t("csv.header.title"),
+    I18n.t("csv.header.amount"),
+    I18n.t("csv.header.category"),
+    I18n.t("csv.header.date"),
+  ];
   const rows = state.transactions.map((tx) => [
     tx.title,
     tx.amount,
@@ -808,13 +817,32 @@ const exportToCSV = () => {
   link.remove();
   URL.revokeObjectURL(url);
 
-  showToast("CSV exported.");
+  showToast(I18n.t("toast.csvExported"));
+};
+
+const syncHeaderActionsI18n = () => {
+  dom.exportCsvBtn.textContent = I18n.t("actions.exportCsv");
+  dom.resetFiltersBtn.textContent = I18n.t("actions.resetFilters");
+  dom.privacySettingsBtn.textContent = I18n.t("actions.privacySettings");
+  dom.themeToggleBtn.textContent =
+    state.theme === "light"
+      ? I18n.t("actions.themeDark")
+      : I18n.t("actions.themeLight");
+};
+
+const syncFormButtonsI18n = () => {
+  dom.submitBtn.textContent = state.editingId
+    ? I18n.t("form.submit.save")
+    : I18n.t("form.submit.add");
+  dom.cancelEditBtn.textContent = I18n.t("form.cancelEdit");
 };
 
 const initializeApp = () => {
   loadConsent();
   loadFromLocalStorage();
   loadTheme();
+  syncHeaderActionsI18n();
+  syncFormButtonsI18n();
   renderApp();
 
   setTimeout(() => {
@@ -913,6 +941,29 @@ const initializeApp = () => {
   if (!state.consent) {
     openPrivacyBanner();
   }
+
+  document.querySelectorAll("[data-lang]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const lang = btn.getAttribute("data-lang");
+      if (lang) I18n.setLang(/** @type {'en'|'zh'} */ (lang));
+    });
+  });
+
+  window.addEventListener("app:languagechange", () => {
+    syncHeaderActionsI18n();
+    syncFormButtonsI18n();
+    renderPrivacyChoiceStatus();
+    const hadFieldErrors = [
+      dom.titleInput,
+      dom.amountInput,
+      dom.categoryInput,
+      dom.dateInput,
+    ].some((el) => el.classList.contains("is-invalid"));
+    if (hadFieldErrors) {
+      validateForm();
+    }
+    renderApp();
+  });
 };
 
 initializeApp();

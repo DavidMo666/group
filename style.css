@@ -90,6 +90,21 @@ body {
   white-space: nowrap;
 }
 
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lang-switch__btn {
+  min-width: 56px;
+  padding: 8px 10px;
+}
+
+.lang-switch__btn.is-active {
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
 .app__eyebrow {
   text-transform: uppercase;
   font-size: 12px;
@@ -579,6 +594,14 @@ body {
   gap: 24px;
 }
 
+.privacy-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .privacy-page__header .app__subtitle,
 .privacy-page__header .btn {
   white-space: nowrap;
@@ -791,6 +814,11 @@ body.theme-light .transaction--editing {
 
   .privacy-page__header {
     grid-template-columns: 1fr;
+  }
+
+  .privacy-page__actions {
+    justify-content: flex-start;
+    width: 100%;
   }
 
   .privacy-page__header .app__subtitle,
