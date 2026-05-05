@@ -17,23 +17,63 @@
     <div class="app">
       <header class="app__header">
         <div>
-          <p class="app__eyebrow">Personal Finance</p>
-          <h1 class="app__title">Advanced Finance Tracker</h1>
-          <p class="app__subtitle">
+          <p class="app__eyebrow" data-i18n="header.eyebrow">Personal Finance</p>
+          <h1 class="app__title" data-i18n="header.title">
+            Advanced Finance Tracker
+          </h1>
+          <p class="app__subtitle" data-i18n="header.subtitle">
             Track income, expenses, and your balance with clarity.
           </p>
         </div>
         <div class="app__actions">
+          <div
+            class="lang-switcher"
+            id="langSwitcher"
+            role="group"
+            aria-label="Language"
+          >
+            <button
+              class="btn btn--ghost"
+              id="langEnBtn"
+              type="button"
+              data-lang="en"
+            >
+              English
+            </button>
+            <button
+              class="btn btn--ghost"
+              id="langZhBtn"
+              type="button"
+              data-lang="zh"
+            >
+              中文
+            </button>
+          </div>
           <button class="btn btn--ghost" id="themeToggleBtn" type="button">
             Light Mode
           </button>
-          <button class="btn btn--accent" id="exportCsvBtn" type="button">
+          <button
+            class="btn btn--accent"
+            id="exportCsvBtn"
+            type="button"
+            data-i18n="actions.exportCsv"
+          >
             Export CSV
           </button>
-          <button class="btn btn--ghost" id="resetFiltersBtn" type="button">
+          <button
+            class="btn btn--ghost"
+            id="resetFiltersBtn"
+            type="button"
+            data-i18n="actions.resetFilters"
+          >
             Reset Filters
           </button>
-          <button class="btn btn--ghost" id="privacySettingsBtn" type="button">
+          <button
+            class="btn btn--ghost"
+            id="privacySettingsBtn"
+            type="button"
+            data-i18n="actions.privacySettings"
+          >
             Privacy Settings
           </button>
         </div>
@@ -41,17 +81,23 @@
 
       <section class="summary">
         <div class="card summary__card">
-          <p class="summary__label">Total Balance</p>
+          <p class="summary__label" data-i18n="summary.totalBalance">
+            Total Balance
+          </p>
           <h2 class="summary__value" id="totalBalance">$0.00</h2>
         </div>
         <div class="card summary__card">
-          <p class="summary__label">Total Income</p>
+          <p class="summary__label" data-i18n="summary.totalIncome">
+            Total Income
+          </p>
           <h2 class="summary__value summary__value--income" id="totalIncome">
             $0.00
           </h2>
         </div>
         <div class="card summary__card">
-          <p class="summary__label">Total Expenses</p>
+          <p class="summary__label" data-i18n="summary.totalExpenses">
+            Total Expenses
+          </p>
           <h2 class="summary__value summary__value--expense" id="totalExpenses">
             $0.00
           </h2>
@@ -60,8 +106,10 @@
 
       <section class="card chart">
         <div class="transactions__header">
-          <h3 class="section-title">Cash Flow Overview</h3>
-          <p class="transactions__meta">Income vs Expense</p>
+          <h3 class="section-title" data-i18n="chart.sectionTitle">
+            Cash Flow Overview
+          </h3>
+          <p class="transactions__meta" data-i18n="chart.meta">Income vs Expense</p>
         </div>
         <canvas
           id="financeChart"
@@ -74,13 +122,16 @@
 
       <section class="grid">
         <div class="card form">
-          <h3 class="section-title">Add Transaction</h3>
+          <h3 class="section-title" data-i18n="form.sectionTitle">
+            Add Transaction
+          </h3>
           <form id="transactionForm" class="form__grid" autocomplete="off">
             <label class="form__field">
-              <span>Title</span>
+              <span data-i18n="form.title">Title</span>
               <input
                 id="titleInput"
                 type="text"
+                data-i18n-placeholder="form.titlePh"
                 placeholder="e.g., Freelance Payment"
                 aria-describedby="titleError"
                 required
@@ -89,10 +140,11 @@
             </label>
 
             <label class="form__field">
-              <span>Amount</span>
+              <span data-i18n="form.amount">Amount</span>
               <input
                 id="amountInput"
                 type="number"
+                data-i18n-placeholder="form.amountPh"
                 placeholder="e.g., 1200 or -45"
                 aria-describedby="amountError"
                 required
@@ -101,29 +153,17 @@
             </label>
 
             <label class="form__field">
-              <span>Category</span>
+              <span data-i18n="form.category">Category</span>
               <select
                 id="categoryInput"
                 aria-describedby="categoryError"
                 required
-              >
-                <option value="" disabled selected>Select category</option>
-                <option>Salary</option>
-                <option>Business</option>
-                <option>Investments</option>
-                <option>Housing</option>
-                <option>Food</option>
-                <option>Transport</option>
-                <option>Health</option>
-                <option>Entertainment</option>
-                <option>Education</option>
-                <option>Other</option>
-              </select>
+              ></select>
               <small class="error" id="categoryError" aria-live="polite"></small>
             </label>
 
             <label class="form__field">
-              <span>Date</span>
+              <span data-i18n="form.date">Date</span>
               <input
                 id="dateInput"
                 type="date"
@@ -150,39 +190,26 @@
         </div>
 
         <div class="card filters">
-          <h3 class="section-title">Filters & Search</h3>
+          <h3 class="section-title" data-i18n="filters.sectionTitle">
+            Filters & Search
+          </h3>
           <div class="filters__grid">
             <label class="form__field">
-              <span>Category</span>
-              <select id="filterCategory">
-                <option value="all">All categories</option>
-                <option>Salary</option>
-                <option>Business</option>
-                <option>Investments</option>
-                <option>Housing</option>
-                <option>Food</option>
-                <option>Transport</option>
-                <option>Health</option>
-                <option>Entertainment</option>
-                <option>Education</option>
-                <option>Other</option>
-              </select>
+              <span data-i18n="filters.category">Category</span>
+              <select id="filterCategory"></select>
             </label>
 
             <label class="form__field">
-              <span>Type</span>
-              <select id="filterType">
-                <option value="all">All</option>
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
-              </select>
+              <span data-i18n="filters.type">Type</span>
+              <select id="filterType"></select>
             </label>
 
             <label class="form__field form__field--full">
-              <span>Search by title</span>
+              <span data-i18n="filters.search">Search by title</span>
               <input
                 id="searchInput"
                 type="text"
+                data-i18n-placeholder="filters.searchPh"
                 placeholder="Start typing..."
               />
             </label>
@@ -192,7 +219,9 @@
 
       <section class="card transactions">
         <div class="transactions__header">
-          <h3 class="section-title">Transactions</h3>
+          <h3 class="section-title" data-i18n="transactions.sectionTitle">
+            Transactions
+          </h3>
           <p class="transactions__meta" id="resultsCount">0 results</p>
         </div>
 
@@ -215,27 +244,43 @@
       hidden
     >
       <div class="privacy-banner__content">
-        <p class="privacy-banner__eyebrow">Local storage notice</p>
-        <h2 id="privacyBannerTitle">Privacy & Storage Preferences</h2>
-        <p>
+        <p class="privacy-banner__eyebrow" data-i18n="privacy.bannerEyebrow">
+          Local storage notice
+        </p>
+        <h2 id="privacyBannerTitle" data-i18n="privacy.bannerTitle">
+          Privacy & Storage Preferences
+        </h2>
+        <p data-i18n="privacy.bannerP1">
           This app can use local storage to save your finance records and theme
-          preference on this device.<br />
+          preference on this device.
+        </p>
+        <p data-i18n="privacy.bannerP2">
           It does not use third-party advertising or analytics tracking.
         </p>
       </div>
       <div class="privacy-banner__actions">
         <p class="privacy-banner__status" id="privacyChoiceStatus"></p>
-        <button class="btn btn--ghost" id="privacyRejectBtn" type="button">
+        <button
+          class="btn btn--ghost"
+          id="privacyRejectBtn"
+          type="button"
+          data-i18n="privacy.reject"
+        >
           Reject persistent storage
         </button>
         <button
           class="btn btn--ghost"
           id="privacyAllowBtn"
           type="button"
+          data-i18n="privacy.allow"
         >
           Allow persistent storage
         </button>
-        <a class="privacy-banner__link" href="privacy.html">
+        <a
+          class="privacy-banner__link"
+          href="privacy.html"
+          data-i18n="privacy.readPolicy"
+        >
           Read Privacy Policy
         </a>
       </div>
@@ -251,19 +296,21 @@
         aria-labelledby="confirmTitle"
         aria-describedby="confirmDescription"
       >
-        <h3 class="section-title" id="confirmTitle">Delete transaction?</h3>
-        <p class="modal__text" id="confirmDescription">
+        <h3 class="section-title" id="confirmTitle" data-i18n="modal.deleteTitle">
+          Delete transaction?
+        </h3>
+        <p class="modal__text" id="confirmDescription" data-i18n="modal.deleteDescription">
           This action cannot be undone.
         </p>
         <!-- Shown only when deleting the transaction currently being edited -->
-        <p class="modal__warning" id="modalEditingWarning" hidden>
+        <p class="modal__warning" id="modalEditingWarning" hidden data-i18n="modal.editingWarning">
           You are currently editing this transaction. Deleting it will discard your unsaved changes.
         </p>
         <div class="modal__actions">
-          <button class="btn btn--ghost" id="cancelDeleteBtn" type="button">
+          <button class="btn btn--ghost" id="cancelDeleteBtn" type="button" data-i18n="modal.cancel">
             Cancel
           </button>
-          <button class="btn btn--danger" id="confirmDeleteBtn" type="button">
+          <button class="btn btn--danger" id="confirmDeleteBtn" type="button" data-i18n="modal.delete">
             Delete
           </button>
         </div>
@@ -278,6 +325,6 @@
       aria-atomic="false"
     ></div>
 
-    <script src="main.js"></script>
+    <script type="module" src="main.js"></script>
   </body>
 </html>

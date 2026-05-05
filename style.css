@@ -90,6 +90,17 @@ body {
   white-space: nowrap;
 }
 
+/* Language toggle sits with other header actions */
+.lang-switcher {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.lang-switcher .btn {
+  min-width: 88px;
+}
+
 .app__eyebrow {
   text-transform: uppercase;
   font-size: 12px;
