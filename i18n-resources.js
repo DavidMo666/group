@@ -1,4 +1,4 @@
-export const resources = {
+const resources = {
   en: {
     translation: {
       meta: {
@@ -330,3 +330,11 @@ export const resources = {
     },
   },
 };
+
+if (typeof globalThis !== "undefined") {
+  globalThis.financeTrackerResources = resources;
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { resources };
+}
