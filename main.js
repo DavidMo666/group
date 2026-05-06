@@ -1,4 +1,5 @@
-"use strict";
+import i18next from "https://cdn.jsdelivr.net/npm/i18next@23.15.2/+esm";
+import { resources } from "./i18n-resources.js";
 
 const STORAGE_KEY = "financeTrackerData";
 const THEME_KEY = "financeTrackerTheme";
@@ -16,6 +17,23 @@ const FOCUSABLE_SELECTOR = [
   "select:not([disabled])",
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
+
+/** Persists last UI language choice for i18next (en | zh). */
+const LANG_KEY = "financeTrackerLang";
+
+/** Stored English labels in transaction records; UI translates via i18next. */
+const CATEGORY_VALUES = [
+  "Salary",
+  "Business",
+  "Investments",
+  "Housing",
+  "Food",
+  "Transport",
+  "Health",
+  "Entertainment",
+  "Education",
+  "Other",
+];
 
 let modalTriggerElement = null;
 
@@ -68,6 +86,122 @@ const dom = {
   privacyChoiceStatus: document.getElementById("privacyChoiceStatus"),
   toastContainer: document.getElementById("toastContainer"),
   skeleton: document.getElementById("skeleton"),
+  langSwitcher: document.getElementById("langSwitcher"),
+  langEnBtn: document.getElementById("langEnBtn"),
+  langZhBtn: document.getElementById("langZhBtn"),
+};
+
+const getResolvedLocale = () =>
+  i18next.language === "zh" ? "zh-CN" : "en-US";
+
+/** Sync static DOM nodes tagged with data-i18n / data-i18n-placeholder. */
+const applyDomTranslations = () => {
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    if (key) el.textContent = i18next.t(key);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    if (key && "placeholder" in el) el.placeholder = i18next.t(key);
+  });
+  document.title = i18next.t("meta.title");
+};
+
+const fillFormCategorySelect = () => {
+  const prev = dom.categoryInput.value;
+  dom.categoryInput.innerHTML = "";
+  const ph = document.createElement("option");
+  ph.value = "";
+  ph.disabled = true;
+  ph.textContent = i18next.t("form.selectCategory");
+  dom.categoryInput.appendChild(ph);
+  for (const c of CATEGORY_VALUES) {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = i18next.t(`categories.${c}`);
+    dom.categoryInput.appendChild(opt);
+  }
+  if (CATEGORY_VALUES.includes(prev)) {
+    dom.categoryInput.value = prev;
+  } else {
+    dom.categoryInput.value = "";
+    ph.selected = true;
+  }
+};
+
+const fillFilterCategorySelect = () => {
+  const prev = dom.filterCategory.value;
+  dom.filterCategory.innerHTML = "";
+  const allOpt = document.createElement("option");
+  allOpt.value = "all";
+  allOpt.textContent = i18next.t("filters.allCategories");
+  dom.filterCategory.appendChild(allOpt);
+  for (const c of CATEGORY_VALUES) {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = i18next.t(`categories.${c}`);
+    dom.filterCategory.appendChild(opt);
+  }
+  const allowed = new Set(["all", ...CATEGORY_VALUES]);
+  dom.filterCategory.value = allowed.has(prev) ? prev : "all";
+};
+
+const fillFilterTypeSelect = () => {
+  const prev = dom.filterType.value;
+  dom.filterType.innerHTML = "";
+  const types = [
+    ["all", "filters.typeAll"],
+    ["income", "filters.typeIncome"],
+    ["expense", "filters.typeExpense"],
+  ];
+  for (const [val, key] of types) {
+    const opt = document.createElement("option");
+    opt.value = val;
+    opt.textContent = i18next.t(key);
+    dom.filterType.appendChild(opt);
+  }
+  const allowed = new Set(["all", "income", "expense"]);
+  dom.filterType.value = allowed.has(prev) ? prev : "all";
+};
+
+const updateLangSwitcherAria = () => {
+  if (dom.langSwitcher) {
+    dom.langSwitcher.setAttribute("aria-label", i18next.t("lang.groupAria"));
+  }
+};
+
+const updateLangButtons = () => {
+  const lng = i18next.language;
+  dom.langEnBtn.textContent = i18next.t("lang.en");
+  dom.langZhBtn.textContent = i18next.t("lang.zh");
+  dom.langEnBtn.setAttribute("aria-pressed", lng === "en" ? "true" : "false");
+  dom.langZhBtn.setAttribute("aria-pressed", lng === "zh" ? "true" : "false");
+};
+
+const updateThemeToggleLabel = () => {
+  dom.themeToggleBtn.textContent =
+    state.theme === "light"
+      ? i18next.t("theme.switchToDark")
+      : i18next.t("theme.switchToLight");
+};
+
+const updateSubmitCancelLabels = () => {
+  dom.cancelEditBtn.textContent = i18next.t("form.cancelEdit");
+  dom.submitBtn.textContent = state.editingId
+    ? i18next.t("form.submitSave")
+    : i18next.t("form.submitAdd");
+};
+
+/** Re-apply all non-dynamic copy and rebuild translated <option> lists. */
+const applyAllStaticUi = () => {
+  applyDomTranslations();
+  fillFormCategorySelect();
+  fillFilterCategorySelect();
+  fillFilterTypeSelect();
+  updateLangSwitcherAria();
+  updateLangButtons();
+  updateThemeToggleLabel();
+  updateSubmitCancelLabels();
 };
 
 const escapeHTML = (str) => {
@@ -177,18 +311,18 @@ const hasPersistentStorageConsent = () => {
 
 const getConsentStatusText = () => {
   if (!state.consent) {
-    return "No storage preference has been recorded yet.";
+    return i18next.t("consent.statusNone");
   }
 
   if (state.consent.mode === CONSENT_MODES.REJECTED) {
-    return "Current choice: persistent storage rejected. New records disappear after refresh.";
+    return i18next.t("consent.statusRejected");
   }
 
   if (hasPersistentStorageConsent()) {
-    return "Current choice: persistent storage allowed. Records and theme are saved.";
+    return i18next.t("consent.statusAllowed");
   }
 
-  return "No storage preference has been recorded yet.";
+  return i18next.t("consent.statusNone");
 };
 
 const renderPrivacyChoiceStatus = () => {
@@ -226,7 +360,7 @@ const saveConsentChoice = (mode) => {
 
   renderPrivacyChoiceStatus();
   closePrivacyBanner();
-  showToast("Privacy storage preference saved.");
+  showToast(i18next.t("toast.privacySaved"));
 };
 
 const loadFromLocalStorage = () => {
@@ -260,12 +394,12 @@ const loadFromLocalStorage = () => {
 
     if (validTransactions.length !== parsed.length) {
       saveToLocalStorage();
-      showToast("Some saved transactions were invalid and were removed.", "error");
+      showToast(i18next.t("toast.invalidRemoved"), "error");
     }
   } catch (error) {
     console.warn("Recovered from invalid financeTrackerData.", error);
     resetStoredTransactions();
-    showToast("Saved data was corrupted and has been reset.", "error");
+    showToast(i18next.t("toast.dataReset"), "error");
   }
 };
 
@@ -281,8 +415,7 @@ const saveTheme = () => {
 const setTheme = (theme) => {
   state.theme = theme;
   document.body.classList.toggle("theme-light", theme === "light");
-  dom.themeToggleBtn.textContent =
-    theme === "light" ? "Dark Mode" : "Light Mode";
+  updateThemeToggleLabel();
   saveTheme();
   renderChart();
 };
@@ -339,22 +472,26 @@ const validateForm = () => {
   let isValid = true;
 
   if (!title) {
-    setError(dom.titleInput, dom.titleError, "Title is required.");
+    setError(dom.titleInput, dom.titleError, i18next.t("errors.titleRequired"));
     isValid = false;
   }
 
   if (!amountValue || Number.isNaN(amount) || amount === 0) {
-    setError(dom.amountInput, dom.amountError, "Enter a valid amount.");
+    setError(dom.amountInput, dom.amountError, i18next.t("errors.amountInvalid"));
     isValid = false;
   }
 
   if (!category) {
-    setError(dom.categoryInput, dom.categoryError, "Select a category.");
+    setError(
+      dom.categoryInput,
+      dom.categoryError,
+      i18next.t("errors.categoryRequired"),
+    );
     isValid = false;
   }
 
   if (!date) {
-    setError(dom.dateInput, dom.dateError, "Pick a date.");
+    setError(dom.dateInput, dom.dateError, i18next.t("errors.dateRequired"));
     isValid = false;
   }
 
@@ -364,14 +501,14 @@ const validateForm = () => {
 const resetFormState = () => {
   dom.form.reset();
   state.editingId = null;
-  dom.submitBtn.textContent = "Add Transaction";
   dom.cancelEditBtn.hidden = true;
   clearErrors();
+  updateSubmitCancelLabels();
 };
 
 const addTransaction = () => {
   if (!validateForm()) {
-    showToast("Please fix the highlighted fields.", "error");
+    showToast(i18next.t("toast.fixFields"), "error");
     return;
   }
 
@@ -386,14 +523,14 @@ const addTransaction = () => {
       (tx) => tx.id === state.editingId,
     );
     if (!stillExists) {
-      showToast("Transaction no longer exists.", "error");
+      showToast(i18next.t("toast.txMissing"), "error");
       resetFormState();
       return;
     }
     state.transactions = state.transactions.map((tx) =>
       tx.id === state.editingId ? { ...tx, title, amount, category, date } : tx,
     );
-    showToast("Transaction updated.");
+    showToast(i18next.t("toast.updated"));
   } else {
     const newTransaction = {
       id: generateID(),
@@ -404,7 +541,7 @@ const addTransaction = () => {
     };
 
     state.transactions = [newTransaction, ...state.transactions];
-    showToast("Transaction added.");
+    showToast(i18next.t("toast.added"));
   }
 
   resetFormState();
@@ -425,15 +562,15 @@ const startEditing = (id) => {
   dom.dateInput.value = transaction.date;
 
   state.editingId = id;
-  dom.submitBtn.textContent = "Save Changes";
+  updateSubmitCancelLabels();
   dom.cancelEditBtn.hidden = false;
   dom.titleInput.focus();
 
   // When switching edit target, tell user unsaved changes on the previous row were discarded
   showToast(
     isSwitching
-      ? "Switched to a different transaction. Unsaved changes discarded."
-      : "Editing mode enabled.",
+      ? i18next.t("toast.switchingEdit")
+      : i18next.t("toast.editingEnabled"),
     isSwitching ? "error" : "success",
   );
 
@@ -449,7 +586,7 @@ const deleteTransaction = (id) => {
   state.transactions = state.transactions.filter((tx) => tx.id !== id);
   saveToLocalStorage();
   renderApp();
-  showToast("Transaction deleted.");
+  showToast(i18next.t("toast.deleted"));
 };
 
 const getConfirmModalFocusableElements = () => {
@@ -562,14 +699,16 @@ const renderSummary = () => {
 const renderTransactions = () => {
   const filtered = filterTransactions();
 
-  dom.resultsCount.textContent = `${filtered.length} results`;
+  dom.resultsCount.textContent = i18next.t("transactions.results", {
+    count: filtered.length,
+  });
 
   if (filtered.length === 0) {
     dom.transactionsList.innerHTML = `
       <div class="transactions__empty">
         <div class="empty__icon" aria-hidden="true">+</div>
-        <p>No transactions yet. Add your first one to get started.</p>
-        <button class="btn btn--accent empty-add-btn" type="button">Add First Transaction</button>
+        <p>${escapeHTML(i18next.t("transactions.emptyText"))}</p>
+        <button class="btn btn--accent empty-add-btn" type="button">${escapeHTML(i18next.t("transactions.emptyCta"))}</button>
       </div>
     `;
     return;
@@ -595,15 +734,16 @@ const renderTransactionItem = (tx) => {
   const formattedDate = formatDate(tx.date);
   // Highlight the row being edited 
   const editingClass = state.editingId === tx.id ? " transaction--editing" : "";
-  const editLabel = `Edit transaction ${tx.title}`;
-  const deleteLabel = `Delete transaction ${tx.title}`;
+  const editLabel = i18next.t("transactions.editAria", { title: tx.title });
+  const deleteLabel = i18next.t("transactions.deleteAria", { title: tx.title });
+  const categoryLabel = i18next.t(`categories.${tx.category}`);
 
   return `
     <div class="transaction${editingClass}">
       <div>
         <p class="transaction__title">${escapeHTML(tx.title)}</p>
         <div class="transaction__meta">
-          <span class="badge">${escapeHTML(tx.category)}</span>
+          <span class="badge">${escapeHTML(categoryLabel)}</span>
           <span>${escapeHTML(formattedDate)}</span>
         </div>
       </div>
@@ -614,13 +754,13 @@ const renderTransactionItem = (tx) => {
           type="button"
           data-id="${escapeHTML(tx.id)}"
           aria-label="${escapeHTML(editLabel)}"
-        >Edit</button>
+        >${escapeHTML(i18next.t("transactions.edit"))}</button>
         <button
           class="delete-btn"
           type="button"
           data-id="${escapeHTML(tx.id)}"
           aria-label="${escapeHTML(deleteLabel)}"
-        >Delete</button>
+        >${escapeHTML(i18next.t("transactions.delete"))}</button>
       </div>
     </div>
   `;
@@ -652,7 +792,7 @@ const groupByMonth = (transactions) => {
   const lookup = new Map();
 
   sorted.forEach((tx) => {
-    const label = new Date(tx.date).toLocaleDateString("en-US", {
+    const label = new Date(tx.date).toLocaleDateString(getResolvedLocale(), {
       month: "long",
       year: "numeric",
     });
@@ -669,7 +809,7 @@ const groupByMonth = (transactions) => {
 };
 
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(getResolvedLocale(), {
     style: "currency",
     currency: "USD",
   }).format(amount);
@@ -677,7 +817,7 @@ const formatCurrency = (amount) => {
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(getResolvedLocale(), {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -713,7 +853,10 @@ const renderChart = () => {
 
   canvas.setAttribute(
     "aria-label",
-    `Cash flow bar chart showing total income ${formattedIncome} and total expenses ${formattedExpenses}.`,
+    i18next.t("chart.aria", {
+      income: formattedIncome,
+      expenses: formattedExpenses,
+    }),
   );
 
   const maxValue = Math.max(income, expenses, 1);
@@ -755,8 +898,16 @@ const renderChart = () => {
   ctx.fillStyle = getCSSVariable("--chart-label") || "#f8f4e9";
   ctx.font = "600 13px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("Income", incomeCenterX, labelY);
-  ctx.fillText("Expense", expenseCenterX, labelY);
+  ctx.fillText(
+    i18next.t("chart.incomeLabel"),
+    incomeCenterX,
+    labelY,
+  );
+  ctx.fillText(
+    i18next.t("chart.expenseLabel"),
+    expenseCenterX,
+    labelY,
+  );
 
   ctx.font = "600 13px sans-serif";
   ctx.fillText(
@@ -779,11 +930,16 @@ const renderApp = () => {
 
 const exportToCSV = () => {
   if (state.transactions.length === 0) {
-    showToast("No data to export.", "error");
+    showToast(i18next.t("toast.noExport"), "error");
     return;
   }
 
-  const headers = ["Title", "Amount", "Category", "Date"];
+  const headers = [
+    i18next.t("csv.title"),
+    i18next.t("csv.amount"),
+    i18next.t("csv.category"),
+    i18next.t("csv.date"),
+  ];
   const rows = state.transactions.map((tx) => [
     tx.title,
     tx.amount,
@@ -808,13 +964,14 @@ const exportToCSV = () => {
   link.remove();
   URL.revokeObjectURL(url);
 
-  showToast("CSV exported.");
+  showToast(i18next.t("toast.exported"));
 };
 
 const initializeApp = () => {
   loadConsent();
   loadFromLocalStorage();
   loadTheme();
+  applyAllStaticUi();
   renderApp();
 
   setTimeout(() => {
@@ -882,6 +1039,14 @@ const initializeApp = () => {
     setTheme(state.theme === "dark" ? "light" : "dark");
   });
 
+  dom.langEnBtn.addEventListener("click", () => {
+    i18next.changeLanguage("en");
+  });
+
+  dom.langZhBtn.addEventListener("click", () => {
+    i18next.changeLanguage("zh");
+  });
+
   dom.privacySettingsBtn.addEventListener("click", openPrivacyBanner);
 
   dom.privacyRejectBtn.addEventListener("click", () => {
@@ -915,4 +1080,32 @@ const initializeApp = () => {
   }
 };
 
-initializeApp();
+/** Boot i18next before wiring DOM so all copy resolves through t(). */
+const initI18n = async () => {
+  const stored = localStorage.getItem(LANG_KEY);
+  const lng = stored === "zh" ? "zh" : "en";
+
+  await i18next.init({
+    lng,
+    fallbackLng: "en",
+    resources,
+    interpolation: { escapeValue: true },
+  });
+
+  document.documentElement.lang = i18next.language === "zh" ? "zh-CN" : "en";
+
+  i18next.on("languageChanged", () => {
+    localStorage.setItem(LANG_KEY, i18next.language);
+    document.documentElement.lang =
+      i18next.language === "zh" ? "zh-CN" : "en";
+    applyAllStaticUi();
+    renderPrivacyChoiceStatus();
+    renderApp();
+  });
+
+  initializeApp();
+};
+
+initI18n().catch((err) => {
+  console.error(err);
+});
