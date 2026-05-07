@@ -1,5 +1,9 @@
-import i18next from "https://cdn.jsdelivr.net/npm/i18next@23.15.2/+esm";
-import { resources } from "./i18n-resources.js";
+const i18next = globalThis.i18next;
+const resources =
+  globalThis.financeTrackerResources ||
+  (typeof module !== "undefined" && module.exports
+    ? require("./i18n-resources.js").resources
+    : undefined);
 
 const LANG_KEY = "financeTrackerLang";
 
@@ -27,32 +31,50 @@ const applyPrivacyPage = () => {
   }
 };
 
-const init = async () => {
+const syncDocumentLanguage = () => {
+  document.documentElement.lang = i18next.language === "zh" ? "zh-CN" : "en";
+};
+
+const init = () => {
+  if (!i18next || !resources) {
+    throw new Error("i18n dependencies were not loaded before privacy-main.js.");
+  }
+
   const stored = localStorage.getItem(LANG_KEY);
   const lng = stored === "zh" ? "zh" : "en";
 
-  await i18next.init({
+  const finishInitialization = () => {
+    syncDocumentLanguage();
+
+    i18next.on("languageChanged", () => {
+      localStorage.setItem(LANG_KEY, i18next.language);
+      syncDocumentLanguage();
+      applyPrivacyPage();
+    });
+
+    document.getElementById("langEnBtn")?.addEventListener("click", () => {
+      i18next.changeLanguage("en");
+    });
+    document.getElementById("langZhBtn")?.addEventListener("click", () => {
+      i18next.changeLanguage("zh");
+    });
+
+    applyPrivacyPage();
+  };
+
+  const initResult = i18next.init({
     lng,
     fallbackLng: "en",
     resources,
     interpolation: { escapeValue: true },
   });
 
-  document.documentElement.lang = i18next.language === "zh" ? "zh-CN" : "en";
+  if (initResult && typeof initResult.then === "function") {
+    return initResult.then(finishInitialization);
+  }
 
-  i18next.on("languageChanged", () => {
-    localStorage.setItem(LANG_KEY, i18next.language);
-    applyPrivacyPage();
-  });
-
-  document.getElementById("langEnBtn")?.addEventListener("click", () => {
-    i18next.changeLanguage("en");
-  });
-  document.getElementById("langZhBtn")?.addEventListener("click", () => {
-    i18next.changeLanguage("zh");
-  });
-
-  applyPrivacyPage();
+  finishInitialization();
+  return Promise.resolve();
 };
 
 init().catch((err) => {

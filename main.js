@@ -1,5 +1,9 @@
-import i18next from "https://cdn.jsdelivr.net/npm/i18next@23.15.2/+esm";
-import { resources } from "./i18n-resources.js";
+const i18next = globalThis.i18next;
+const resources =
+  globalThis.financeTrackerResources ||
+  (typeof module !== "undefined" && module.exports
+    ? require("./i18n-resources.js").resources
+    : undefined);
 
 const STORAGE_KEY = "financeTrackerData";
 const THEME_KEY = "financeTrackerTheme";
@@ -36,6 +40,8 @@ const CATEGORY_VALUES = [
 ];
 
 let modalTriggerElement = null;
+let isInitialized = false;
+let hasLanguageChangeListener = false;
 
 const state = {
   transactions: [],
@@ -358,6 +364,7 @@ const saveConsentChoice = (mode) => {
     saveTheme();
   }
 
+  renderApp();
   renderPrivacyChoiceStatus();
   closePrivacyBanner();
   showToast(i18next.t("toast.privacySaved"));
@@ -968,6 +975,9 @@ const exportToCSV = () => {
 };
 
 const initializeApp = () => {
+  if (isInitialized) return;
+  isInitialized = true;
+
   loadConsent();
   loadFromLocalStorage();
   loadTheme();
@@ -1080,32 +1090,126 @@ const initializeApp = () => {
   }
 };
 
+const syncDocumentLanguage = () => {
+  document.documentElement.lang = i18next.language === "zh" ? "zh-CN" : "en";
+};
+
 /** Boot i18next before wiring DOM so all copy resolves through t(). */
-const initI18n = async () => {
+const initI18n = () => {
+  if (!i18next || !resources) {
+    throw new Error("i18n dependencies were not loaded before main.js.");
+  }
+
   const stored = localStorage.getItem(LANG_KEY);
   const lng = stored === "zh" ? "zh" : "en";
 
-  await i18next.init({
+  const finalizeInitialization = () => {
+    syncDocumentLanguage();
+
+    if (!hasLanguageChangeListener) {
+      i18next.on("languageChanged", () => {
+        localStorage.setItem(LANG_KEY, i18next.language);
+        syncDocumentLanguage();
+        applyAllStaticUi();
+        renderPrivacyChoiceStatus();
+        renderApp();
+      });
+      hasLanguageChangeListener = true;
+    }
+
+    initializeApp();
+  };
+
+  const initResult = i18next.init({
     lng,
     fallbackLng: "en",
     resources,
     interpolation: { escapeValue: true },
   });
 
-  document.documentElement.lang = i18next.language === "zh" ? "zh-CN" : "en";
+  if (initResult && typeof initResult.then === "function") {
+    return initResult.then(finalizeInitialization);
+  }
 
-  i18next.on("languageChanged", () => {
-    localStorage.setItem(LANG_KEY, i18next.language);
-    document.documentElement.lang =
-      i18next.language === "zh" ? "zh-CN" : "en";
-    applyAllStaticUi();
-    renderPrivacyChoiceStatus();
-    renderApp();
-  });
-
-  initializeApp();
+  finalizeInitialization();
+  return Promise.resolve();
 };
 
-initI18n().catch((err) => {
-  console.error(err);
-});
+const financeTrackerApp = {
+  STORAGE_KEY,
+  THEME_KEY,
+  CONSENT_KEY,
+  CONSENT_VERSION,
+  CONSENT_MODES,
+  LANG_KEY,
+  CATEGORY_VALUES,
+  state,
+  dom,
+  getResolvedLocale,
+  applyDomTranslations,
+  fillFormCategorySelect,
+  fillFilterCategorySelect,
+  fillFilterTypeSelect,
+  applyAllStaticUi,
+  escapeHTML,
+  isCSVFormulaRisk,
+  toCSVTextFormula,
+  escapeCSVCell,
+  generateID,
+  saveToLocalStorage,
+  isPlainObject,
+  isValidTransaction,
+  resetStoredTransactions,
+  isValidConsent,
+  loadConsent,
+  hasPersistentStorageConsent,
+  getConsentStatusText,
+  renderPrivacyChoiceStatus,
+  openPrivacyBanner,
+  closePrivacyBanner,
+  saveConsentChoice,
+  loadFromLocalStorage,
+  saveTheme,
+  setTheme,
+  getCSSVariable,
+  showToast,
+  clearErrors,
+  setError,
+  validateForm,
+  resetFormState,
+  addTransaction,
+  startEditing,
+  deleteTransaction,
+  getConfirmModalFocusableElements,
+  focusConfirmModal,
+  restoreFocusAfterModal,
+  handleConfirmModalKeydown,
+  openConfirmModal,
+  closeConfirmModal,
+  renderSummary,
+  renderTransactions,
+  renderTransactionItem,
+  filterTransactions,
+  groupByMonth,
+  formatCurrency,
+  formatDate,
+  renderChart,
+  renderApp,
+  exportToCSV,
+  initializeApp,
+  initI18n,
+};
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = financeTrackerApp;
+}
+
+if (typeof globalThis !== "undefined") {
+  globalThis.financeTrackerApp = financeTrackerApp;
+}
+
+if (typeof document !== "undefined" && dom.form) {
+  initI18n().catch((err) => {
+    console.error(err);
+  });
+}
