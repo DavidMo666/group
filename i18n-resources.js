@@ -1,3 +1,4 @@
+(function () {
 const resources = {
   en: {
     translation: {
@@ -338,3 +339,4 @@ if (typeof globalThis !== "undefined") {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { resources };
 }
+})();
